@@ -17,16 +17,18 @@ public class TransactionCategorizationStep : UserControl
 
     private bool _suppressEvents;
 
-    private const int ColCount    = 0;
-    private const int ColType     = 1;
-    private const int ColPattern  = 2;
-    private const int ColDir      = 3;
-    private const int ColTotal    = 4;
-    private const int ColCategory = 5;
+    private const int ColCount     = 0;
+    private const int ColType      = 1;
+    private const int ColPattern   = 2;
+    private const int ColDir       = 3;
+    private const int ColFrequency = 4;
+    private const int ColTotal     = 5;
+    private const int ColCategory  = 6;
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private readonly Button       _btnAutoCateg;
     private readonly Button       _btnManageCats;
+    private readonly Button       _btnSplit;
     private readonly Label        _lblProgress;
     private readonly DataGridView _groupsGrid;
     private readonly Label        _lblDetailHeader;
@@ -60,16 +62,24 @@ public class TransactionCategorizationStep : UserControl
             Location = new Point(206, 8)
         };
 
+        _btnSplit = new Button
+        {
+            Text     = "Split Group…",
+            Size     = new Size(110, 28),
+            Location = new Point(364, 8),
+            Enabled  = false
+        };
+
         _lblProgress = new Label
         {
             Text      = "",
             AutoSize  = true,
-            Location  = new Point(368, 14),
+            Location  = new Point(484, 14),
             Font      = new Font("Segoe UI", 9.5f),
             ForeColor = Color.DimGray
         };
 
-        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _lblProgress });
+        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnSplit, _lblProgress });
 
         // ── Groups grid ──────────────────────────────────────────────────────
         _groupsGrid = new DataGridView
@@ -139,6 +149,7 @@ public class TransactionCategorizationStep : UserControl
 
         _btnAutoCateg.Click  += OnAutoCateg;
         _btnManageCats.Click += OnManageCategories;
+        _btnSplit.Click      += OnSplitGroup;
 
         Controls.Add(split);
         Controls.Add(topBar);
@@ -187,6 +198,9 @@ public class TransactionCategorizationStep : UserControl
 
         _groupsGrid.Columns.Add(new DataGridViewTextBoxColumn
             { Name = "Direction", HeaderText = "Direction", Width = 80, ReadOnly = true });
+
+        _groupsGrid.Columns.Add(new DataGridViewTextBoxColumn
+            { Name = "Frequency", HeaderText = "Frequency", Width = 82, ReadOnly = true });
 
         var totalCol = new DataGridViewTextBoxColumn
             { Name = "Total", HeaderText = "Total", Width = 90, ReadOnly = true };
@@ -242,6 +256,7 @@ public class TransactionCategorizationStep : UserControl
                 typeLabel,
                 group.DisplayName,
                 group.DirectionLabel,
+                group.FrequencyLabel,
                 group.Total.ToString("N2"),
                 catName);
 
@@ -385,7 +400,46 @@ public class TransactionCategorizationStep : UserControl
         if (_groupsGrid.SelectedRows.Count == 0) return;
         var group = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
         if (group == null) return;
+
+        // Enable Split only for groups with multiple transactions
+        _btnSplit.Enabled = group.Count > 1;
+
         PopulateDetailGrid(group);
+    }
+
+    private void OnSplitGroup(object? sender, EventArgs e)
+    {
+        if (_groupsGrid.SelectedRows.Count == 0) return;
+        var group = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
+        if (group == null || group.Count <= 1) return;
+
+        var subGroups = _grouperService.SplitGroup(group);
+
+        if (subGroups.Count <= 1)
+        {
+            MessageBox.Show(
+                "No distinct sub-patterns were found within this group.\n" +
+                "All transactions share the same keywords after removing the group pattern.",
+                "Cannot Split Further",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        // Preserve the category already assigned to the original group
+        foreach (var sg in subGroups)
+            sg.CategoryId = group.CategoryId;
+
+        // Replace the original group with the sub-groups
+        int idx = _groups.IndexOf(group);
+        _groups.RemoveAt(idx);
+        _groups.InsertRange(idx, subGroups);
+
+        PopulateGroupsGrid();
+        UpdateProgress();
+
+        // Select the first of the new sub-group rows
+        if (_groupsGrid.Rows.Count > idx)
+            _groupsGrid.Rows[idx].Selected = true;
     }
 
     private void OnAutoCateg(object? sender, EventArgs e)

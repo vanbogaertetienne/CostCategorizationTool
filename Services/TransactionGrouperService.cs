@@ -138,6 +138,78 @@ public class TransactionGrouperService
         return result;
     }
 
+    // ── Sub-group splitting ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Breaks a group into finer sub-groups by stripping the tokens that define
+    /// the current group's pattern and re-clustering on whatever remains.
+    /// Returns the original group unchanged (as a single-element list) when no
+    /// meaningful sub-structure is found.
+    /// </summary>
+    public List<TransactionGroup> SplitGroup(TransactionGroup group)
+    {
+        var txs         = group.Transactions;
+        var groupTokens = new HashSet<string>(
+            IntelliCategorizationService.TokenizeAndClean(group.Pattern),
+            StringComparer.OrdinalIgnoreCase);
+
+        // Strip the group's defining tokens from each transaction's token set
+        var strippedSets = txs
+            .Select(t => IntelliCategorizationService.TokenizeAndClean(t.Details)
+                .Where(tok => !groupTokens.Contains(tok))
+                .ToList())
+            .ToList();
+
+        // Union-find with threshold=1 on the stripped tokens
+        var parent = Enumerable.Range(0, txs.Count).ToArray();
+        for (int i = 0; i < txs.Count; i++)
+        {
+            if (strippedSets[i].Count == 0) continue;
+            for (int j = i + 1; j < txs.Count; j++)
+            {
+                if (strippedSets[j].Count == 0) continue;
+                if (strippedSets[i].Intersect(strippedSets[j], StringComparer.OrdinalIgnoreCase).Any())
+                    Union(parent, i, j);
+            }
+        }
+
+        // Collect components
+        var components = new Dictionary<int, List<int>>();
+        for (int i = 0; i < txs.Count; i++)
+        {
+            int root = Find(parent, i);
+            if (!components.TryGetValue(root, out var list))
+                components[root] = list = new();
+            list.Add(i);
+        }
+
+        // If everything ended up in one component, splitting found nothing new
+        if (components.Count == 1) return new List<TransactionGroup> { group };
+
+        var result = new List<TransactionGroup>();
+        foreach (var indices in components.Values)
+        {
+            var subTxs  = indices.Select(i => txs[i]).ToList();
+            var subSets = indices.Select(i => strippedSets[i]).ToList();
+
+            // Build a pattern from the stripped sub-tokens; fall back to a
+            // representative phrase from the full description
+            string subPattern = IntelliCategorizationService.FindCommonPattern(subSets, subTxs);
+            if (string.IsNullOrWhiteSpace(subPattern))
+            {
+                // No stripped tokens found — use the full description tokens
+                var fullTokens = IntelliCategorizationService.TokenizeAndClean(subTxs[0].Details);
+                subPattern = fullTokens.Count > 0
+                    ? string.Join(" ", fullTokens.Take(3))
+                    : subTxs[0].Details.Trim();
+            }
+
+            result.AddRange(SplitBySign(subTxs, RuleType.Details, subPattern, subPattern));
+        }
+
+        return result;
+    }
+
     private static int  Find(int[] p, int i) => p[i] == i ? i : p[i] = Find(p, p[i]);
     private static void Union(int[] p, int i, int j) => p[Find(p, i)] = Find(p, j);
 }
