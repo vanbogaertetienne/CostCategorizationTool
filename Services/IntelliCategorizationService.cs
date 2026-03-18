@@ -25,13 +25,25 @@ public class IntelliCategorizationService
         "NR", "REF", "BE", "N", "VIA", "SEPA", "MONSIEUR", "MADAME", "MR", "MME",
         "THE", "AND", "FOR",
         // Currency words (carry no merchant-identity signal)
-        "EUR", "EUROS", "EURO"
+        "EUR", "EUROS", "EURO",
+        // Payment method / contactless tokens — stripped as phrases first (see NoisePatterns),
+        // also listed here so any stray individual token is also suppressed
+        "SANS", "CONTACT", "PAY", "EXECUTE",
+        // Domain suffix — TAKEAWAY.COM splits to TAKEAWAY + COM; COM has no merchant signal
+        "COM",
+        // Currency-conversion metadata words
+        "FRAIS", "TRAITEMENT", "CHANGE", "COURS", "USD", "GBP", "CHF"
     };
 
     // ── Noise patterns to strip before tokenisation ──────────────────────────
 
     private static readonly Regex[] NoisePatterns =
     {
+        // Payment-method phrases — must be stripped as units BEFORE tokenisation so that
+        // "APPLE" in "APPLE PAY" is removed but "APPLE" in "APPLE.COM BILL" is preserved.
+        new Regex(@"\bAPPLE\s+PAY\b",    RegexOptions.IgnoreCase),
+        new Regex(@"\bSANS\s+CONTACT\b", RegexOptions.IgnoreCase),
+        new Regex(@"\bEXECUTE\s+LE\b",   RegexOptions.IgnoreCase),
         // Belgian card number mask: "4871 04XX XXXX 3606"
         new Regex(@"\b[0-9X]{4}(\s+[0-9X]{4}){3}\b", RegexOptions.IgnoreCase),
         // Dates dd/MM/yyyy or dd-MM-yyyy
