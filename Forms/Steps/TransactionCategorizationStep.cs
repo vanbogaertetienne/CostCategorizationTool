@@ -29,6 +29,7 @@ public class TransactionCategorizationStep : UserControl
     private readonly Button       _btnAutoCateg;
     private readonly Button       _btnManageCats;
     private readonly Button       _btnSplit;
+    private readonly Button       _btnExport;
     private readonly CheckBox     _chkUncategorizedOnly;
     private readonly Label        _lblProgress;
     private readonly DataGridView _groupsGrid;
@@ -71,11 +72,19 @@ public class TransactionCategorizationStep : UserControl
             Enabled  = false
         };
 
+        _btnExport = new Button
+        {
+            Text     = "Export Group…",
+            Size     = new Size(110, 28),
+            Location = new Point(482, 8),
+            Enabled  = false
+        };
+
         _chkUncategorizedOnly = new CheckBox
         {
             Text      = "Show uncategorized only",
             AutoSize  = true,
-            Location  = new Point(484, 12),
+            Location  = new Point(602, 12),
             Font      = new Font("Segoe UI", 9.5f)
         };
 
@@ -83,12 +92,12 @@ public class TransactionCategorizationStep : UserControl
         {
             Text      = "",
             AutoSize  = true,
-            Location  = new Point(668, 14),
+            Location  = new Point(790, 14),
             Font      = new Font("Segoe UI", 9.5f),
             ForeColor = Color.DimGray
         };
 
-        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnSplit, _chkUncategorizedOnly, _lblProgress });
+        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnSplit, _btnExport, _chkUncategorizedOnly, _lblProgress });
 
         // ── Groups grid ──────────────────────────────────────────────────────
         _groupsGrid = new DataGridView
@@ -156,9 +165,10 @@ public class TransactionCategorizationStep : UserControl
         split.Panel1.Controls.Add(_groupsGrid);
         split.Panel2.Controls.Add(detailPanel);
 
-        _btnAutoCateg.Click             += OnAutoCateg;
-        _btnManageCats.Click            += OnManageCategories;
-        _btnSplit.Click                 += OnSplitGroup;
+        _btnAutoCateg.Click                  += OnAutoCateg;
+        _btnManageCats.Click                 += OnManageCategories;
+        _btnSplit.Click                      += OnSplitGroup;
+        _btnExport.Click                     += OnExportGroup;
         _chkUncategorizedOnly.CheckedChanged += (_, _) => PopulateGroupsGrid();
 
         Controls.Add(split);
@@ -415,8 +425,9 @@ public class TransactionCategorizationStep : UserControl
         var group = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
         if (group == null) return;
 
-        // Enable Split only for groups with multiple transactions
-        _btnSplit.Enabled = group.Count > 1;
+        // Enable group-level actions whenever a group is selected
+        _btnSplit.Enabled  = group.Count > 1;
+        _btnExport.Enabled = true;
 
         PopulateDetailGrid(group);
     }
@@ -431,9 +442,17 @@ public class TransactionCategorizationStep : UserControl
 
         if (subGroups.Count <= 1)
         {
+            var groupTokens = string.Join(", ",
+                IntelliCategorizationService.TokenizeAndClean(group.Pattern)
+                    .Select(t => $"\"{t}\""));
+
             MessageBox.Show(
-                "No distinct sub-patterns were found within this group.\n" +
-                "All transactions share the same keywords after removing the group pattern.",
+                $"No distinct sub-patterns were found within this group.\n\n" +
+                $"Group pattern:  \"{group.Pattern}\"\n" +
+                $"Tokens removed: {(groupTokens.Length > 0 ? groupTokens : "(none)")}\n\n" +
+                "After removing these tokens, all transactions share the same remaining\n" +
+                "keywords (or have none left). Use \"Export Group…\" to inspect the raw\n" +
+                "data and see exactly what the algorithm is working with.",
                 "Cannot Split Further",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
@@ -455,6 +474,62 @@ public class TransactionCategorizationStep : UserControl
         if (_groupsGrid.Rows.Count > idx)
             _groupsGrid.Rows[idx].Selected = true;
     }
+
+    private void OnExportGroup(object? sender, EventArgs e)
+    {
+        if (_groupsGrid.SelectedRows.Count == 0) return;
+        var group = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
+        if (group == null) return;
+
+        using var dlg = new SaveFileDialog
+        {
+            Title      = "Export group for analysis",
+            Filter     = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+            FileName   = $"group_debug_{group.DisplayName.Replace(" ", "_")}.csv",
+            DefaultExt = "csv"
+        };
+        if (dlg.ShowDialog(ParentForm) != DialogResult.OK) return;
+
+        var groupTokens = new HashSet<string>(
+            IntelliCategorizationService.TokenizeAndClean(group.Pattern),
+            StringComparer.OrdinalIgnoreCase);
+
+        var lines = new List<string>
+        {
+            // Header
+            "GroupPattern;GroupType;Date;TransactionType;CounterpartName;" +
+            "Details;Communication;SearchableText;AllTokens;RemainingTokensAfterSplit"
+        };
+
+        foreach (var tx in group.Transactions.OrderBy(t => t.ExecutionDate))
+        {
+            var allTokens       = IntelliCategorizationService.TokenizeAndClean(tx.SearchableText);
+            var remainingTokens = allTokens.Where(t => !groupTokens.Contains(t)).ToList();
+
+            lines.Add(string.Join(";", new[]
+            {
+                CsvCell(group.Pattern),
+                group.RuleType.ToString(),
+                tx.ExecutionDate.ToString("dd/MM/yyyy"),
+                CsvCell(tx.TransactionType),
+                CsvCell(tx.CounterpartName),
+                CsvCell(tx.Details),
+                CsvCell(tx.Communication),
+                CsvCell(tx.SearchableText),
+                CsvCell(string.Join(", ", allTokens)),
+                CsvCell(string.Join(", ", remainingTokens))
+            }));
+        }
+
+        File.WriteAllLines(dlg.FileName, lines, System.Text.Encoding.UTF8);
+        MessageBox.Show($"Exported {group.Count} transactions to:\n{dlg.FileName}",
+            "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private static string CsvCell(string value) =>
+        value.Contains(';') || value.Contains('"') || value.Contains('\n')
+            ? $"\"{value.Replace("\"", "\"\"")}\""
+            : value;
 
     private void OnAutoCateg(object? sender, EventArgs e)
     {
