@@ -155,6 +155,25 @@ public class IntelliCategorizationService
     private static string PhraseFromTokens(List<string> tokens)
         => string.Join(" ", tokens.Take(4));
 
+    /// <summary>
+    /// Returns the LCS-based common pattern across token sets, or a fallback phrase
+    /// if the transaction list is provided and no LCS is found.
+    /// </summary>
+    public static string FindCommonPattern(List<List<string>> tokenSets, IEnumerable<Transaction>? txFallback = null)
+    {
+        var nonEmpty = tokenSets.Where(s => s.Count > 0).ToList();
+        if (nonEmpty.Count == 0)
+        {
+            var first = txFallback?.FirstOrDefault();
+            return first?.Details.Trim() ?? "";
+        }
+        if (nonEmpty.Count == 1)
+            return string.Join(" ", nonEmpty[0].Take(4));
+
+        var lcs = FindCommonWordSequence(nonEmpty);
+        return !string.IsNullOrWhiteSpace(lcs) ? lcs : string.Join(" ", nonEmpty[0].Take(3));
+    }
+
     private static string FindCommonWordSequence(List<List<string>> tokenSets)
     {
         var common = tokenSets[0];
@@ -184,7 +203,7 @@ public class IntelliCategorizationService
         return bestLen > 0 ? a.GetRange(bestStart, bestLen) : new List<string>();
     }
 
-    internal static List<string> TokenizeAndClean(string details)
+    public static List<string> TokenizeAndClean(string details)
     {
         var text = details.ToUpperInvariant();
 
