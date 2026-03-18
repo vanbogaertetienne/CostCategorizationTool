@@ -29,6 +29,7 @@ public class TransactionCategorizationStep : UserControl
     private readonly Button       _btnAutoCateg;
     private readonly Button       _btnManageCats;
     private readonly Button       _btnSplit;
+    private readonly CheckBox     _chkUncategorizedOnly;
     private readonly Label        _lblProgress;
     private readonly DataGridView _groupsGrid;
     private readonly Label        _lblDetailHeader;
@@ -70,16 +71,24 @@ public class TransactionCategorizationStep : UserControl
             Enabled  = false
         };
 
+        _chkUncategorizedOnly = new CheckBox
+        {
+            Text      = "Show uncategorized only",
+            AutoSize  = true,
+            Location  = new Point(484, 12),
+            Font      = new Font("Segoe UI", 9.5f)
+        };
+
         _lblProgress = new Label
         {
             Text      = "",
             AutoSize  = true,
-            Location  = new Point(484, 14),
+            Location  = new Point(668, 14),
             Font      = new Font("Segoe UI", 9.5f),
             ForeColor = Color.DimGray
         };
 
-        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnSplit, _lblProgress });
+        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnSplit, _chkUncategorizedOnly, _lblProgress });
 
         // ── Groups grid ──────────────────────────────────────────────────────
         _groupsGrid = new DataGridView
@@ -147,9 +156,10 @@ public class TransactionCategorizationStep : UserControl
         split.Panel1.Controls.Add(_groupsGrid);
         split.Panel2.Controls.Add(detailPanel);
 
-        _btnAutoCateg.Click  += OnAutoCateg;
-        _btnManageCats.Click += OnManageCategories;
-        _btnSplit.Click      += OnSplitGroup;
+        _btnAutoCateg.Click             += OnAutoCateg;
+        _btnManageCats.Click            += OnManageCategories;
+        _btnSplit.Click                 += OnSplitGroup;
+        _chkUncategorizedOnly.CheckedChanged += (_, _) => PopulateGroupsGrid();
 
         Controls.Add(split);
         Controls.Add(topBar);
@@ -244,7 +254,11 @@ public class TransactionCategorizationStep : UserControl
         _suppressEvents = true;
         _groupsGrid.Rows.Clear();
 
-        foreach (var group in _groups)
+        var visibleGroups = _chkUncategorizedOnly.Checked
+            ? _groups.Where(g => !g.CategoryId.HasValue).ToList()
+            : _groups;
+
+        foreach (var group in visibleGroups)
         {
             string typeLabel = group.RuleType == RuleType.IBAN ? "IBAN" : "Keyword";
             string catName   = group.CategoryId.HasValue
