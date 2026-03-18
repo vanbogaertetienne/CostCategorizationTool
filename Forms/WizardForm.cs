@@ -220,7 +220,8 @@ public class WizardForm : Form
                 // Categorization → summary
                 _transactions = _categorizationStep.GetTransactions();
                 var categories = _db.GetCategories();
-                _summaryStep.LoadSummary(_transactions, categories);
+                var groups     = _categorizationStep.GetGroups();
+                _summaryStep.LoadSummary(_transactions, categories, groups);
                 break;
         }
 

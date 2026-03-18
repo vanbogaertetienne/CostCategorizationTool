@@ -1,16 +1,19 @@
 using System.Globalization;
 using System.Text;
 using CostCategorizationTool.Models;
+using CostCategorizationTool.Services;
 
 namespace CostCategorizationTool.Forms.Steps;
 
 public class SummaryStep : UserControl
 {
-    private List<Transaction> _transactions = new();
-    private List<Category>    _categories   = new();
+    private List<Transaction>      _transactions = new();
+    private List<Category>         _categories   = new();
+    private List<TransactionGroup> _groups       = new();
 
     private readonly ListView _summaryList;
     private readonly Button   _btnExport;
+    private readonly Button   _btnExportExcel;
     private readonly Label    _lblTotal;
 
     public SummaryStep()
@@ -57,12 +60,24 @@ public class SummaryStep : UserControl
             Anchor = AnchorStyles.Bottom | AnchorStyles.Right
         };
 
+        _btnExportExcel = new Button
+        {
+            Text      = "Export to Excel…",
+            Size      = new Size(140, 32),
+            Anchor    = AnchorStyles.Bottom | AnchorStyles.Right,
+            BackColor = Color.FromArgb(33, 115, 70),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat
+        };
+
         Controls.Add(titleLabel);
         Controls.Add(_summaryList);
         Controls.Add(_lblTotal);
         Controls.Add(_btnExport);
+        Controls.Add(_btnExportExcel);
 
-        _btnExport.Click += OnExport;
+        _btnExport.Click      += OnExport;
+        _btnExportExcel.Click += OnExportExcel;
         Resize += OnResize;
 
         ResumeLayout(false);
@@ -84,8 +99,9 @@ public class SummaryStep : UserControl
         _summaryList.Size     = new Size(Math.Max(w, 200), Math.Max(h, 60));
 
         int bottom = _summaryList.Bottom + 8;
-        _lblTotal.Location    = new Point(16, bottom);
-        _btnExport.Location   = new Point(ClientSize.Width - 16 - _btnExport.Width, bottom - 2);
+        _lblTotal.Location        = new Point(16, bottom);
+        _btnExport.Location       = new Point(ClientSize.Width - 16 - _btnExport.Width, bottom - 2);
+        _btnExportExcel.Location  = new Point(_btnExport.Left - 8 - _btnExportExcel.Width, bottom - 2);
 
         // Resize columns proportionally
         if (_summaryList.Columns.Count >= 3)
@@ -97,10 +113,12 @@ public class SummaryStep : UserControl
         }
     }
 
-    public void LoadSummary(List<Transaction> transactions, List<Category> categories)
+    public void LoadSummary(List<Transaction> transactions, List<Category> categories,
+        List<TransactionGroup>? groups = null)
     {
         _transactions = transactions;
         _categories   = categories;
+        _groups       = groups ?? new();
 
         _summaryList.Items.Clear();
 
@@ -161,6 +179,31 @@ public class SummaryStep : UserControl
         _lblTotal.Text = $"Grand total expenses: {grandTotal:N2} {(transactions.FirstOrDefault()?.Currency ?? "EUR")}";
 
         LayoutControls();
+    }
+
+    private void OnExportExcel(object? sender, EventArgs e)
+    {
+        using var dlg = new SaveFileDialog
+        {
+            Title      = "Export to Excel",
+            Filter     = "Excel workbook (*.xlsx)|*.xlsx|All files|*.*",
+            FileName   = $"CostCategorization_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+            DefaultExt = "xlsx"
+        };
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        try
+        {
+            var svc = new ExcelExportService();
+            svc.Export(dlg.FileName, _transactions, _categories, _groups);
+            MessageBox.Show($"Exported successfully to:\n{dlg.FileName}", "Export Complete",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Export failed:\n{ex.Message}", "Export Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private void OnExport(object? sender, EventArgs e)

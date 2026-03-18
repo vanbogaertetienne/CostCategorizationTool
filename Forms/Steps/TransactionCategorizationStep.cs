@@ -120,6 +120,7 @@ public class TransactionCategorizationStep : UserControl
         _groupsGrid.SelectionChanged += OnGroupSelectionChanged;
         _groupsGrid.CurrentCellDirtyStateChanged += (_, _) =>
         {
+            if (_suppressEvents) return;
             if (_groupsGrid.IsCurrentCellDirty)
                 _groupsGrid.CommitEdit(DataGridViewDataErrorContexts.Commit);
         };
@@ -217,7 +218,8 @@ public class TransactionCategorizationStep : UserControl
         UpdateProgress();
     }
 
-    public List<Transaction> GetTransactions() => _transactions;
+    public List<Transaction>      GetTransactions() => _transactions;
+    public List<TransactionGroup> GetGroups()       => _groups;
 
     // ── Grid construction ────────────────────────────────────────────────────
 
@@ -387,8 +389,9 @@ public class TransactionCategorizationStep : UserControl
     // ── Category mapping ─────────────────────────────────────────────────────
 
     /// <summary>
-    /// After auto-categorize runs, maps the most common CategoryId in each group
-    /// back to the group itself (so the ComboBox shows the right value).
+    /// Derives each group's category from the majority of its transactions,
+    /// then propagates that category back to every transaction in the group.
+    /// This keeps the group and all its transactions in sync in both directions.
     /// </summary>
     private void MapCategoriesToGroups()
     {
@@ -399,6 +402,11 @@ public class TransactionCategorizationStep : UserControl
                 .GroupBy(t => t.CategoryId!.Value)
                 .OrderByDescending(g => g.Count())
                 .FirstOrDefault()?.Key;
+
+            // Propagate back: every transaction in this group gets the same category.
+            // This handles cases where a rule only matched a subset of the group's txs.
+            foreach (var tx in group.Transactions)
+                tx.CategoryId = group.CategoryId;
         }
     }
 
