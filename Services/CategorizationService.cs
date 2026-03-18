@@ -31,13 +31,31 @@ public class CategorizationService
                         string.Equals(tx.Counterpart, rule.Pattern, StringComparison.OrdinalIgnoreCase),
                     RuleType.Details =>
                         !string.IsNullOrEmpty(rule.Pattern) &&
-                        tx.SearchableText.Contains(rule.Pattern, StringComparison.OrdinalIgnoreCase),
+                        MatchesDetails(tx, rule.Pattern),
                     _ => false
                 };
 
                 if (matched) { tx.CategoryId = rule.CategoryId; break; }
             }
         }
+    }
+
+    /// <summary>
+    /// Checks a Details rule pattern against a transaction.
+    /// First tries a raw substring match (covers manually-typed rules).
+    /// If that fails, also tries against the space-joined cleaned tokens,
+    /// because auto-generated patterns are derived from tokenised text and
+    /// may not literally appear in the raw description (e.g. "APPLE BILL"
+    /// won't be found as-is in "APPLE.COM BILL" without the token check).
+    /// </summary>
+    private static bool MatchesDetails(Transaction tx, string pattern)
+    {
+        if (tx.SearchableText.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var cleanedText = string.Join(" ",
+            IntelliCategorizationService.TokenizeAndClean(tx.SearchableText));
+        return cleanedText.Contains(pattern, StringComparison.OrdinalIgnoreCase);
     }
 
     public void ReAutoCategorize(List<Transaction> transactions, List<CategoryRule> rules,
