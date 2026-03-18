@@ -10,17 +10,18 @@ public class RuleTypeSelectionDialog : Form
     public AmountSign SelectedSign => _rbSignPos.Checked ? AmountSign.Positive
                                     : _rbSignNeg.Checked ? AmountSign.Negative
                                     : AmountSign.Any;
+    public string SelectedPattern  => _cboPattern.Text.Trim();
 
-    public static (RuleChoice Choice, AmountSign Sign) Show(
-        IWin32Window? owner,
-        Transaction   tx,
-        string        categoryName,
-        string        detectedPattern,
-        bool          autoExpandDetails)
+    public static (RuleChoice Choice, AmountSign Sign, string Pattern) Show(
+        IWin32Window?       owner,
+        Transaction         tx,
+        string              categoryName,
+        IReadOnlyList<string> suggestedPatterns,
+        bool                autoExpandDetails)
     {
-        using var dlg = new RuleTypeSelectionDialog(tx, categoryName, detectedPattern, autoExpandDetails);
+        using var dlg = new RuleTypeSelectionDialog(tx, categoryName, suggestedPatterns, autoExpandDetails);
         dlg.ShowDialog(owner);
-        return (dlg.Choice, dlg.SelectedSign);
+        return (dlg.Choice, dlg.SelectedSign, dlg.SelectedPattern);
     }
 
     // ── Controls ─────────────────────────────────────────────────────────────
@@ -36,23 +37,22 @@ public class RuleTypeSelectionDialog : Form
     private readonly Button      _btnToggleDetails;
     private readonly Button      _btnOK;
     private readonly Button      _btnCancel;
+    private readonly ComboBox    _cboPattern;
 
-    private readonly string _detectedPattern;
     private readonly string _iban;
     private readonly string _categoryName;
 
-    private const int BaseClientHeight = 530;
+    private const int BaseClientHeight = 544;
     private const int DetailsHeight    = 90;
 
     private RuleTypeSelectionDialog(
-        Transaction tx,
-        string      categoryName,
-        string      detectedPattern,
-        bool        autoExpandDetails)
+        Transaction          tx,
+        string               categoryName,
+        IReadOnlyList<string> suggestedPatterns,
+        bool                 autoExpandDetails)
     {
-        _detectedPattern = detectedPattern;
-        _iban            = tx.Counterpart ?? "";
-        _categoryName    = categoryName;
+        _iban         = tx.Counterpart ?? "";
+        _categoryName = categoryName;
 
         SuspendLayout();
 
@@ -107,30 +107,46 @@ public class RuleTypeSelectionDialog : Form
 
         var sep1 = HRule(14, 202);
         _rbByDesc = Radio("Similar payments — match by description keyword", 14, 210, defaultChecked: true);
-        string descText = !string.IsNullOrWhiteSpace(detectedPattern)
-            ? $"Payments whose description contains  \"{detectedPattern}\"  will\n" +
-              $"be automatically categorised as \"{categoryName}\" in the future."
-            : $"Payments with a similar description will be automatically\n" +
-              $"categorised as \"{categoryName}\" in the future.";
-        var lbl2 = Desc(descText, 34, 232);
 
-        var sep2 = HRule(14, 278);
-        _rbByIBAN = Radio("All payments to/from the same account (IBAN)", 14, 286, enabled: hasIBAN);
+        var lblPatternCaption = new Label
+        {
+            Text      = "Keyword to match in description (select or type your own):",
+            AutoSize  = true,
+            Location  = new Point(34, 234),
+            Font      = new Font("Segoe UI", 9f),
+            ForeColor = Color.FromArgb(80, 80, 80)
+        };
+
+        _cboPattern = new ComboBox
+        {
+            Location      = new Point(34, 254),
+            Size          = new Size(472, 24),
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Font          = new Font("Segoe UI", 9.5f)
+        };
+        foreach (var p in suggestedPatterns)
+            _cboPattern.Items.Add(p);
+        if (_cboPattern.Items.Count > 0)
+            _cboPattern.SelectedIndex = 0;
+        _cboPattern.TextChanged += (_, _) => UpdateTechDetails();
+
+        var sep2 = HRule(14, 292);
+        _rbByIBAN = Radio("All payments to/from the same account (IBAN)", 14, 300, enabled: hasIBAN);
         string ibanText = hasIBAN
             ? $"Every payment to or from  {tx.Counterpart}  will be categorised\n" +
               $"as \"{categoryName}\". Only choose this if all payments from this\n" +
               $"account always belong to the same category."
             : "Not available — this transaction has no linked account number\n" +
               "(card payments do not carry a counterpart IBAN).";
-        var lbl3 = Desc(ibanText, 34, 308, enabled: hasIBAN);
+        var lbl3 = Desc(ibanText, 34, 322, enabled: hasIBAN);
 
         // ── Transaction direction ─────────────────────────────────────────────
-        var sep3 = HRule(14, 362);
+        var sep3 = HRule(14, 378);
 
         var grpSign = new GroupBox
         {
             Text     = "Transaction direction",
-            Location = new Point(14, 372),
+            Location = new Point(14, 388),
             Size     = new Size(492, 54),
             Font     = new Font("Segoe UI", 9f)
         };
@@ -153,13 +169,13 @@ public class RuleTypeSelectionDialog : Form
         grpSign.Controls.AddRange(new Control[] { _rbSignAny, _rbSignPos, _rbSignNeg });
 
         // ── Technical details ─────────────────────────────────────────────────
-        var sep4 = HRule(14, 434);
+        var sep4 = HRule(14, 450);
 
         _btnToggleDetails = new Button
         {
             Text      = "▶  Show technical details",
             AutoSize  = true,
-            Location  = new Point(14, 442),
+            Location  = new Point(14, 458),
             FlatStyle = FlatStyle.Flat,
             ForeColor = Color.SteelBlue,
             Cursor    = Cursors.Hand,
@@ -170,7 +186,7 @@ public class RuleTypeSelectionDialog : Form
 
         _detailsPanel = new Panel
         {
-            Location    = new Point(14, 470),
+            Location    = new Point(14, 486),
             Size        = new Size(492, DetailsHeight - 6),
             BackColor   = Color.FromArgb(245, 246, 252),
             BorderStyle = BorderStyle.FixedSingle,
@@ -195,10 +211,10 @@ public class RuleTypeSelectionDialog : Form
 
         _btnOK.Click += OnOK;
 
-        // Wire sign changes to tech details update
-        _rbJustThis.CheckedChanged += (_, _) => UpdateTechDetails();
-        _rbByDesc.CheckedChanged   += (_, _) => UpdateTechDetails();
-        _rbByIBAN.CheckedChanged   += (_, _) => UpdateTechDetails();
+        // Wire changes to tech details update
+        _rbJustThis.CheckedChanged += (_, _) => { _cboPattern.Enabled = _rbByDesc.Checked; UpdateTechDetails(); };
+        _rbByDesc.CheckedChanged   += (_, _) => { _cboPattern.Enabled = _rbByDesc.Checked; UpdateTechDetails(); };
+        _rbByIBAN.CheckedChanged   += (_, _) => { _cboPattern.Enabled = _rbByDesc.Checked; UpdateTechDetails(); };
         _rbSignAny.CheckedChanged  += (_, _) => UpdateTechDetails();
         _rbSignPos.CheckedChanged  += (_, _) => UpdateTechDetails();
         _rbSignNeg.CheckedChanged  += (_, _) => UpdateTechDetails();
@@ -208,7 +224,7 @@ public class RuleTypeSelectionDialog : Form
         {
             lblCatHeader, pnlCtx, sep0, lblQ,
             _rbJustThis, lbl1, sep1,
-            _rbByDesc,   lbl2, sep2,
+            _rbByDesc,   lblPatternCaption, _cboPattern, sep2,
             _rbByIBAN,   lbl3, sep3,
             grpSign,     sep4,
             _btnToggleDetails, _detailsPanel,
@@ -285,7 +301,7 @@ public class RuleTypeSelectionDialog : Form
         }
         else if (_rbByDesc.Checked)
         {
-            string p = !string.IsNullOrWhiteSpace(_detectedPattern) ? _detectedPattern : "(no pattern detected)";
+            string p = !string.IsNullOrWhiteSpace(_cboPattern.Text) ? _cboPattern.Text.Trim() : "(no pattern)";
             _lblTechDetails.Text =
                 $"Rule type:  Description keyword (case-insensitive contains)\r\n" +
                 $"Pattern:     {p}\r\n" +

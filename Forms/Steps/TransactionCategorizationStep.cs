@@ -337,18 +337,18 @@ public class TransactionCategorizationStep : UserControl
         // Save the previous category so we can revert if the user cancels.
         var prevCategoryId = tx.CategoryId;
 
-        // ── Pre-compute the Details pattern (shown in the dialog) ─────────────
+        // ── Pre-compute candidate Details patterns (shown in the dialog) ────────
         var sameCatTxs = _transactions
             .Where(t => t != tx && t.CategoryId == cat.Id)
             .ToList();
-        string detectedPattern = _intelliService.SuggestDetailsPattern(tx, sameCatTxs);
+        var suggestedPatterns = _intelliService.SuggestDetailsPatterns(tx, sameCatTxs);
 
         // ── Always ask the user how to handle the categorisation ──────────────
-        var (choice, sign) = RuleTypeSelectionDialog.Show(
+        var (choice, sign, chosenPattern) = RuleTypeSelectionDialog.Show(
             ParentForm,
             tx,
             cat.Name,
-            detectedPattern,
+            suggestedPatterns,
             autoExpandDetails: _settings.ConfirmBeforeRuleModification);
 
         if (choice == RuleTypeSelectionDialog.RuleChoice.Cancelled)
@@ -378,8 +378,8 @@ public class TransactionCategorizationStep : UserControl
                 return; // No rule to save, no need to re-run auto-categorize.
 
             case RuleTypeSelectionDialog.RuleChoice.ByDescription:
-                _db.AddAutoRule(cat.Id, RuleType.Details, detectedPattern, sign);
-                _lblRuleInfo.Text      = $"✓  Rule saved: description contains \"{detectedPattern}\" → {cat.Name}";
+                _db.AddAutoRule(cat.Id, RuleType.Details, chosenPattern, sign);
+                _lblRuleInfo.Text      = $"✓  Rule saved: description contains \"{chosenPattern}\" → {cat.Name}";
                 _lblRuleInfo.ForeColor = Color.DarkGreen;
                 break;
 

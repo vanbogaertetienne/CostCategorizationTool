@@ -23,7 +23,9 @@ public class IntelliCategorizationService
         "BANCONTACT", "MAESTRO", "VISA", "MASTERCARD", "PAYCONIQ",
         // Misc
         "NR", "REF", "BE", "N", "VIA", "SEPA", "MONSIEUR", "MADAME", "MR", "MME",
-        "THE", "AND", "FOR"
+        "THE", "AND", "FOR",
+        // Currency words (carry no merchant-identity signal)
+        "EUR", "EUROS", "EURO"
     };
 
     // ── Noise patterns to strip before tokenisation ──────────────────────────
@@ -90,27 +92,62 @@ public class IntelliCategorizationService
     }
 
     /// <summary>
-    /// Returns only the Details-based pattern, regardless of whether the transaction
-    /// has a Counterpart IBAN. Used to pre-populate the dialog shown to the user.
+    /// Returns a ranked list of Details-based pattern candidates for the user to choose from.
+    /// The first item is the best suggestion (LCS across similar transactions if available,
+    /// otherwise the longest cleaned phrase from this transaction).
+    /// Subsequent items are shorter sub-phrases and individual tokens, giving the user
+    /// several specificity levels to pick from.
     /// </summary>
-    public string SuggestDetailsPattern(Transaction tx, IEnumerable<Transaction> allSameCategoryTxs)
+    public List<string> SuggestDetailsPatterns(Transaction tx, IEnumerable<Transaction> allSameCategoryTxs)
     {
         var newTokens = TokenizeAndClean(tx.Details);
         if (newTokens.Count == 0)
-            return tx.Details.Trim();
+            return new List<string> { tx.Details.Trim() };
 
+        var seen   = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<string>();
+
+        void Add(string s)
+        {
+            s = s.Trim();
+            if (s.Length >= 3 && seen.Add(s))
+                result.Add(s);
+        }
+
+        // 1. LCS with similar transactions — most "verified" pattern, shown first.
         var similarTokenSets = allSameCategoryTxs
             .Where(t => t != tx && !string.IsNullOrWhiteSpace(t.Details))
             .Select(t => TokenizeAndClean(t.Details))
             .Where(tokens => tokens.Intersect(newTokens, StringComparer.OrdinalIgnoreCase).Count() >= MinSimilarTokens)
             .ToList();
 
-        if (similarTokenSets.Count == 0)
-            return PhraseFromTokens(newTokens);
+        if (similarTokenSets.Count > 0)
+        {
+            similarTokenSets.Add(newTokens);
+            var lcs = FindCommonWordSequence(similarTokenSets);
+            if (!string.IsNullOrWhiteSpace(lcs))
+                Add(lcs);
+        }
 
-        similarTokenSets.Add(newTokens);
-        var common = FindCommonWordSequence(similarTokenSets);
-        return !string.IsNullOrEmpty(common) ? common : PhraseFromTokens(newTokens);
+        // 2. Subphrases of the current transaction (longest → shortest).
+        for (int len = Math.Min(newTokens.Count, 4); len >= 1; len--)
+            Add(string.Join(" ", newTokens.Take(len)));
+
+        // 3. Any remaining individual tokens not yet covered.
+        foreach (var token in newTokens)
+            Add(token);
+
+        return result.Take(6).ToList();
+    }
+
+    /// <summary>
+    /// Returns only the Details-based pattern, regardless of whether the transaction
+    /// has a Counterpart IBAN. Used to pre-populate the dialog shown to the user.
+    /// </summary>
+    public string SuggestDetailsPattern(Transaction tx, IEnumerable<Transaction> allSameCategoryTxs)
+    {
+        var patterns = SuggestDetailsPatterns(tx, allSameCategoryTxs);
+        return patterns.Count > 0 ? patterns[0] : tx.Details.Trim();
     }
 
     // ── Internal helpers ─────────────────────────────────────────────────────
