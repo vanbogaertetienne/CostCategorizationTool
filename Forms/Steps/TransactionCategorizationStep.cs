@@ -123,6 +123,16 @@ public class TransactionCategorizationStep : UserControl
             if (_groupsGrid.IsCurrentCellDirty)
                 _groupsGrid.CommitEdit(DataGridViewDataErrorContexts.Commit);
         };
+        _groupsGrid.SortCompare += (_, e) =>
+        {
+            if (e.Column.Index == ColCount || e.Column.Index == ColTotal)
+            {
+                decimal v1 = ParseDecimal(e.CellValue1);
+                decimal v2 = ParseDecimal(e.CellValue2);
+                e.SortResult = v1.CompareTo(v2);
+                e.Handled    = true;
+            }
+        };
 
         // ── Detail panel ─────────────────────────────────────────────────────
         _lblDetailHeader = new Label
@@ -147,6 +157,14 @@ public class TransactionCategorizationStep : UserControl
             AutoSizeColumnsMode         = DataGridViewAutoSizeColumnsMode.None,
             BorderStyle                 = BorderStyle.None,
             BackgroundColor             = SystemColors.Window
+        };
+        _detailGrid.SortCompare += (_, e) =>
+        {
+            if (e.Column.Name == "Amount")
+            {
+                e.SortResult = ParseDecimal(e.CellValue1).CompareTo(ParseDecimal(e.CellValue2));
+                e.Handled    = true;
+            }
         };
 
         // ── SplitContainer ───────────────────────────────────────────────────
@@ -530,6 +548,12 @@ public class TransactionCategorizationStep : UserControl
         value.Contains(';') || value.Contains('"') || value.Contains('\n')
             ? $"\"{value.Replace("\"", "\"\"")}\""
             : value;
+
+    private static decimal ParseDecimal(object? value) =>
+        decimal.TryParse(value?.ToString(),
+            System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.CurrentCulture,
+            out var d) ? d : 0m;
 
     private void OnAutoCateg(object? sender, EventArgs e)
     {
