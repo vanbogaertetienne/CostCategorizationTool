@@ -32,7 +32,8 @@ public class ExcelExportService
         // Headers
         string[] headers =
         {
-            "Date", "Amount", "Currency", "AccountNumber",
+            "Date", "Year", "Quarter", "Month",
+            "Amount", "Currency", "AccountNumber",
             "TransactionType", "Counterpart", "CounterpartName",
             "Communication", "Details", "Category"
         };
@@ -49,15 +50,18 @@ public class ExcelExportService
                 : "";
 
             ws.Cell(row, 1).Value  = tx.ExecutionDate.ToString("dd/MM/yyyy");
-            ws.Cell(row, 2).Value  = (double)tx.Amount;
-            ws.Cell(row, 3).Value  = tx.Currency;
-            ws.Cell(row, 4).Value  = tx.AccountNumber;
-            ws.Cell(row, 5).Value  = tx.TransactionType;
-            ws.Cell(row, 6).Value  = tx.Counterpart;
-            ws.Cell(row, 7).Value  = tx.CounterpartName;
-            ws.Cell(row, 8).Value  = tx.Communication;
-            ws.Cell(row, 9).Value  = tx.Details;
-            ws.Cell(row, 10).Value = cat;
+            ws.Cell(row, 2).Value  = tx.ExecutionDate.Year;
+            ws.Cell(row, 3).Value  = $"Q{(tx.ExecutionDate.Month - 1) / 3 + 1}";
+            ws.Cell(row, 4).Value  = tx.ExecutionDate.ToString("MMM", CultureInfo.InvariantCulture);
+            ws.Cell(row, 5).Value  = (double)tx.Amount;
+            ws.Cell(row, 6).Value  = tx.Currency;
+            ws.Cell(row, 7).Value  = tx.AccountNumber;
+            ws.Cell(row, 8).Value  = tx.TransactionType;
+            ws.Cell(row, 9).Value  = tx.Counterpart;
+            ws.Cell(row, 10).Value = tx.CounterpartName;
+            ws.Cell(row, 11).Value = tx.Communication;
+            ws.Cell(row, 12).Value = tx.Details;
+            ws.Cell(row, 13).Value = cat;
         }
 
         // Format as Excel table
@@ -69,7 +73,7 @@ public class ExcelExportService
         }
 
         // Amount column: number format
-        ws.Column(2).Style.NumberFormat.Format = "#,##0.00";
+        ws.Column(5).Style.NumberFormat.Format = "#,##0.00";
 
         ws.SheetView.FreezeRows(1);
         ws.Columns().AdjustToContents(1, 60);
@@ -196,6 +200,7 @@ public class ExcelExportService
         {
             var pt = ws.PivotTables.Add("CategoryOverview", ws.Cell("A4"), dataRange);
             pt.RowLabels.Add("Category");
+            pt.ColumnLabels.Add("Year");
             pt.Values.Add("Amount", "Sum of Amount").SetSummaryFormula(XLPivotSummary.Sum);
         }
         catch
