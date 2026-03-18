@@ -63,16 +63,16 @@ public class IntelliCategorizationService
         if (!string.IsNullOrWhiteSpace(newTx.Counterpart))
             return (RuleType.IBAN, newTx.Counterpart);
 
-        var newTokens = TokenizeAndClean(newTx.Details);
+        var newTokens = TokenizeAndClean(newTx.SearchableText);
         if (newTokens.Count == 0)
-            return (RuleType.Details, newTx.Details.Trim());
+            return (RuleType.Details, newTx.SearchableText);
 
         // Gather same-category transactions whose Details are "similar" to this one
         // (share at least MinSimilarTokens cleaned tokens).  This prevents unrelated
         // merchants assigned to the same category from polluting each other's pattern.
         var similarTokenSets = allSameCategoryTxs
-            .Where(t => t != newTx && !string.IsNullOrWhiteSpace(t.Details))
-            .Select(t => TokenizeAndClean(t.Details))
+            .Where(t => t != newTx && !string.IsNullOrWhiteSpace(t.SearchableText))
+            .Select(t => TokenizeAndClean(t.SearchableText))
             .Where(tokens => tokens.Intersect(newTokens, StringComparer.OrdinalIgnoreCase).Count() >= MinSimilarTokens)
             .ToList();
 
@@ -100,9 +100,9 @@ public class IntelliCategorizationService
     /// </summary>
     public List<string> SuggestDetailsPatterns(Transaction tx, IEnumerable<Transaction> allSameCategoryTxs)
     {
-        var newTokens = TokenizeAndClean(tx.Details);
+        var newTokens = TokenizeAndClean(tx.SearchableText);
         if (newTokens.Count == 0)
-            return new List<string> { tx.Details.Trim() };
+            return new List<string> { tx.SearchableText };
 
         var seen   = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var result = new List<string>();
@@ -116,8 +116,8 @@ public class IntelliCategorizationService
 
         // 1. LCS with similar transactions — most "verified" pattern, shown first.
         var similarTokenSets = allSameCategoryTxs
-            .Where(t => t != tx && !string.IsNullOrWhiteSpace(t.Details))
-            .Select(t => TokenizeAndClean(t.Details))
+            .Where(t => t != tx && !string.IsNullOrWhiteSpace(t.SearchableText))
+            .Select(t => TokenizeAndClean(t.SearchableText))
             .Where(tokens => tokens.Intersect(newTokens, StringComparer.OrdinalIgnoreCase).Count() >= MinSimilarTokens)
             .ToList();
 
@@ -147,7 +147,7 @@ public class IntelliCategorizationService
     public string SuggestDetailsPattern(Transaction tx, IEnumerable<Transaction> allSameCategoryTxs)
     {
         var patterns = SuggestDetailsPatterns(tx, allSameCategoryTxs);
-        return patterns.Count > 0 ? patterns[0] : tx.Details.Trim();
+        return patterns.Count > 0 ? patterns[0] : tx.SearchableText;
     }
 
     // ── Internal helpers ─────────────────────────────────────────────────────
@@ -165,7 +165,7 @@ public class IntelliCategorizationService
         if (nonEmpty.Count == 0)
         {
             var first = txFallback?.FirstOrDefault();
-            return first?.Details.Trim() ?? "";
+            return first?.SearchableText ?? "";
         }
         if (nonEmpty.Count == 1)
             return string.Join(" ", nonEmpty[0].Take(4));

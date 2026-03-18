@@ -16,4 +16,13 @@ public class Transaction
     public string Status { get; set; } = "";
     public int? CategoryId { get; set; }
     public bool IsExpense => Amount < 0;
+
+    /// <summary>
+    /// Concatenation of all free-text fields used for keyword matching and
+    /// tokenization.  Different banks put merchant names in different columns
+    /// (Details vs Communication vs CounterpartName), so we search across all of them.
+    /// </summary>
+    public string SearchableText =>
+        string.Join(" ", Details, Communication, CounterpartName)
+              .Trim();
 }

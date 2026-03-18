@@ -98,7 +98,7 @@ public class TransactionGrouperService
         if (transactions.Count == 0) return new();
 
         var tokenSets = transactions
-            .Select(t => IntelliCategorizationService.TokenizeAndClean(t.Details))
+            .Select(t => IntelliCategorizationService.TokenizeAndClean(t.SearchableText))
             .ToList();
 
         // Union-find
@@ -153,9 +153,9 @@ public class TransactionGrouperService
             IntelliCategorizationService.TokenizeAndClean(group.Pattern),
             StringComparer.OrdinalIgnoreCase);
 
-        // Strip the group's defining tokens from each transaction's token set
+        // Strip the group's defining tokens from each transaction's full text
         var strippedSets = txs
-            .Select(t => IntelliCategorizationService.TokenizeAndClean(t.Details)
+            .Select(t => IntelliCategorizationService.TokenizeAndClean(t.SearchableText)
                 .Where(tok => !groupTokens.Contains(tok))
                 .ToList())
             .ToList();

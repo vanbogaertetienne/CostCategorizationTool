@@ -31,7 +31,7 @@ public class CategorizationService
                         string.Equals(tx.Counterpart, rule.Pattern, StringComparison.OrdinalIgnoreCase),
                     RuleType.Details =>
                         !string.IsNullOrEmpty(rule.Pattern) &&
-                        tx.Details.Contains(rule.Pattern, StringComparison.OrdinalIgnoreCase),
+                        tx.SearchableText.Contains(rule.Pattern, StringComparison.OrdinalIgnoreCase),
                     _ => false
                 };
 
