@@ -452,8 +452,16 @@ public class TransactionCategorizationStep : UserControl
         if (!grid.IsHandleCreated || grid.Columns.Count == 0) return;
         foreach (DataGridViewColumn col in grid.Columns)
         {
-            if (col.AutoSizeMode != DataGridViewAutoSizeColumnMode.Fill)
-                grid.AutoResizeColumn(col.Index, DataGridViewAutoSizeColumnMode.AllCells);
+            if (col.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill) continue;
+            grid.AutoResizeColumn(col.Index, DataGridViewAutoSizeColumnMode.AllCells);
+            // ComboBox columns: also measure dropdown items (AllCells only sees current values)
+            if (col is DataGridViewComboBoxColumn combo && combo.Items.Count > 0)
+            {
+                int itemW = combo.Items.Cast<object>()
+                    .Max(item => TextRenderer.MeasureText(item?.ToString() ?? "", grid.Font).Width);
+                int needed = itemW + 36; // room for dropdown arrow + cell padding
+                if (col.Width < needed) col.Width = needed;
+            }
         }
     }
 
