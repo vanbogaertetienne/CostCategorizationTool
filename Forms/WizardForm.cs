@@ -9,7 +9,6 @@ public class WizardForm : Form
 {
     // ── DB / services ────────────────────────────────────────────────────────
     private readonly AppDatabase _db;
-    private readonly AppSettings _settings;
     private readonly CategorizationService _categorizationService = new();
 
     // ── State ────────────────────────────────────────────────────────────────
@@ -37,13 +36,10 @@ public class WizardForm : Form
     {
         SuspendLayout();
 
-        // DB path
-        var dbDir  = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "CostCategorizationTool");
-        var dbPath = Path.Combine(dbDir, "data.db");
-        _db       = new AppDatabase(dbPath);
-        _settings = AppSettings.Load();
+        // Store data next to the exe so the tool is fully portable
+        var exeDir = Path.GetDirectoryName(Environment.ProcessPath)
+                     ?? AppContext.BaseDirectory;
+        _db = new AppDatabase(Path.Combine(exeDir, "data.db"));
 
         // ── Form properties ──────────────────────────────────────────────────
         Text            = "Cost Categorization Tool";
@@ -123,9 +119,9 @@ public class WizardForm : Form
         _contentPanel = new Panel { Dock = DockStyle.Fill };
 
         // ── Create steps ────────────────────────────────────────────────────
-        _fileStep           = new FileSelectionStep                        { Dock = DockStyle.Fill };
-        _categorizationStep = new TransactionCategorizationStep(_db, _settings) { Dock = DockStyle.Fill };
-        _summaryStep        = new SummaryStep                             { Dock = DockStyle.Fill };
+        _fileStep           = new FileSelectionStep                   { Dock = DockStyle.Fill };
+        _categorizationStep = new TransactionCategorizationStep(_db) { Dock = DockStyle.Fill };
+        _summaryStep        = new SummaryStep                        { Dock = DockStyle.Fill };
 
         _steps = new UserControl[]
         {
@@ -249,7 +245,7 @@ public class WizardForm : Form
 
     private void OnOpenSettings(object? sender, EventArgs e)
     {
-        using var dlg = new SettingsDialog(_db, _settings);
+        using var dlg = new SettingsDialog(_db);
         dlg.ShowDialog(this);
         // Settings are saved inside the dialog on close.
 

@@ -1,78 +1,37 @@
 using CostCategorizationTool.Data;
-using CostCategorizationTool.Models;
 
 namespace CostCategorizationTool.Forms;
 
 public class SettingsDialog : Form
 {
-    // ── Results that WizardForm checks after the dialog closes ────────────────
     public bool ResetTransactionsRequested { get; private set; }
     public bool ResetDatabaseExecuted      { get; private set; }
 
     private readonly AppDatabase _db;
-    private readonly AppSettings _settings;
-    private readonly CheckBox    _chkConfirmRules;
 
-    public SettingsDialog(AppDatabase db, AppSettings settings)
+    public SettingsDialog(AppDatabase db)
     {
-        _db       = db;
-        _settings = settings;
+        _db = db;
 
         SuspendLayout();
 
         Text            = "Settings";
-        ClientSize      = new Size(480, 420);
+        ClientSize      = new Size(480, 310);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition   = FormStartPosition.CenterParent;
         MaximizeBox     = false;
         MinimizeBox     = false;
         Font            = new Font("Segoe UI", 9.5f);
 
-        int y = 14;
-
-        // ── Section: Categorization ───────────────────────────────────────────
-        var grpCategorization = new GroupBox
-        {
-            Text     = "Categorization",
-            Location = new Point(14, y),
-            Size     = new Size(452, 100),
-            Font     = new Font("Segoe UI", 9.5f, FontStyle.Bold)
-        };
-
-        _chkConfirmRules = new CheckBox
-        {
-            Text     = "Ask for confirmation before saving rules",
-            AutoSize = true,
-            Location = new Point(12, 24),
-            Font     = new Font("Segoe UI", 9.5f),
-            Checked  = _settings.ConfirmBeforeRuleModification
-        };
-
-        var lblChkDesc = new Label
-        {
-            Text      = "When enabled, the app will show you a plain-English explanation of\n" +
-                        "each rule before it is saved, and ask you to confirm.",
-            AutoSize  = false,
-            Size      = new Size(428, 40),
-            Location  = new Point(28, 46),
-            Font      = new Font("Segoe UI", 8.5f),
-            ForeColor = Color.FromArgb(80, 80, 80)
-        };
-
-        grpCategorization.Controls.Add(_chkConfirmRules);
-        grpCategorization.Controls.Add(lblChkDesc);
-        y += grpCategorization.Height + 14;
-
         // ── Section: Maintenance ─────────────────────────────────────────────
         var grpMaintenance = new GroupBox
         {
             Text     = "Maintenance",
-            Location = new Point(14, y),
+            Location = new Point(14, 14),
             Size     = new Size(452, 220),
             Font     = new Font("Segoe UI", 9.5f, FontStyle.Bold)
         };
 
-        // Reset Database
         var btnResetDb = new Button
         {
             Text      = "Reset Database",
@@ -101,7 +60,6 @@ public class SettingsDialog : Form
             BackColor = Color.FromArgb(210, 210, 210)
         };
 
-        // Reset Transactions
         var btnResetTx = new Button
         {
             Text      = "Reset Transactions",
@@ -128,29 +86,18 @@ public class SettingsDialog : Form
             btnResetDb, lblResetDb, separator, btnResetTx, lblResetTx
         });
 
-        // ── Close button ─────────────────────────────────────────────────────
         var btnClose = new Button
         {
             Text         = "Close",
             DialogResult = DialogResult.OK,
             Size         = new Size(90, 32),
-            Location     = new Point(386, 376)
+            Location     = new Point(386, 266)
         };
 
-        Controls.AddRange(new Control[] { grpCategorization, grpMaintenance, btnClose });
+        Controls.AddRange(new Control[] { grpMaintenance, btnClose });
         AcceptButton = btnClose;
         CancelButton = btnClose;
         ResumeLayout(false);
-    }
-
-    // ── Event handlers ────────────────────────────────────────────────────────
-
-    protected override void OnFormClosing(FormClosingEventArgs e)
-    {
-        // Persist settings whenever the dialog closes
-        _settings.ConfirmBeforeRuleModification = _chkConfirmRules.Checked;
-        _settings.Save();
-        base.OnFormClosing(e);
     }
 
     private void OnResetDatabase(object? sender, EventArgs e)
