@@ -6,10 +6,11 @@ public class CategorizationService
 {
     public void AutoCategorize(List<Transaction> transactions, List<CategoryRule> rules)
     {
-        // Details rules are evaluated before IBAN rules so that a specific keyword
-        // match always wins over a broad "all payments from this account" IBAN rule.
+        // Details rules before IBAN rules; within Details rules, longer patterns first
+        // so that "Brico Vilvoorde" is tested before the broader "Brico".
         var orderedRules = rules
             .OrderBy(r => r.RuleType == RuleType.IBAN ? 1 : 0)
+            .ThenByDescending(r => r.Pattern.Length)
             .ToList();
 
         foreach (var tx in transactions)
