@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Data.Sqlite;
 using CostCategorizationTool.Models;
 
@@ -34,6 +35,23 @@ public class AppDatabase : IDisposable
                 rule_type   INTEGER NOT NULL,
                 pattern     TEXT NOT NULL,
                 is_auto     INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS transactions (
+                dedup_key        TEXT PRIMARY KEY,
+                sequence_number  TEXT NOT NULL DEFAULT '',
+                execution_date   TEXT NOT NULL,
+                value_date       TEXT NOT NULL,
+                amount           TEXT NOT NULL,
+                currency         TEXT NOT NULL DEFAULT '',
+                account_number   TEXT NOT NULL DEFAULT '',
+                transaction_type TEXT NOT NULL DEFAULT '',
+                counterpart      TEXT NOT NULL DEFAULT '',
+                counterpart_name TEXT NOT NULL DEFAULT '',
+                communication    TEXT NOT NULL DEFAULT '',
+                details          TEXT NOT NULL DEFAULT '',
+                status           TEXT NOT NULL DEFAULT '',
+                category_id      INTEGER REFERENCES categories(id) ON DELETE SET NULL
             );
         ";
         cmd.ExecuteNonQuery();
@@ -75,10 +93,13 @@ public class AppDatabase : IDisposable
         }
     }
 
-    /// <summary>Wipes all categories and rules, then restores the default categories.</summary>
+    /// <summary>Wipes all categories and rules, then restores the default categories.
+    /// Transaction category assignments are cleared but the transactions themselves remain.</summary>
     public void ResetDatabase()
     {
         using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "UPDATE transactions SET category_id = NULL;";
+        cmd.ExecuteNonQuery();
         cmd.CommandText = "DELETE FROM category_rules;";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "DELETE FROM categories;";
@@ -251,6 +272,125 @@ public class AppDatabase : IDisposable
         using var cmd = _connection.CreateCommand();
         cmd.CommandText = "DELETE FROM category_rules WHERE id = @id;";
         cmd.Parameters.AddWithValue("@id", id);
+        cmd.ExecuteNonQuery();
+    }
+
+    // ── Transactions ─────────────────────────────────────────────────────────
+
+    public List<Transaction> GetTransactions()
+    {
+        var list = new List<Transaction>();
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = @"
+            SELECT dedup_key, sequence_number, execution_date, value_date,
+                   amount, currency, account_number, transaction_type,
+                   counterpart, counterpart_name, communication, details,
+                   status, category_id
+            FROM transactions ORDER BY execution_date DESC, rowid DESC;";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            list.Add(new Transaction
+            {
+                SequenceNumber  = reader.GetString(1),
+                ExecutionDate   = DateTime.Parse(reader.GetString(2)),
+                ValueDate       = DateTime.Parse(reader.GetString(3)),
+                Amount          = decimal.Parse(reader.GetString(4), CultureInfo.InvariantCulture),
+                Currency        = reader.GetString(5),
+                AccountNumber   = reader.GetString(6),
+                TransactionType = reader.GetString(7),
+                Counterpart     = reader.GetString(8),
+                CounterpartName = reader.GetString(9),
+                Communication   = reader.GetString(10),
+                Details         = reader.GetString(11),
+                Status          = reader.GetString(12),
+                CategoryId      = reader.IsDBNull(13) ? null : reader.GetInt32(13)
+            });
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Imports transactions, skipping any whose dedup_key already exists.
+    /// Returns the count of added and skipped transactions.
+    /// </summary>
+    public (int added, int skipped) ImportTransactions(List<Transaction> transactions)
+    {
+        int added = 0, skipped = 0;
+        using var txn = _connection.BeginTransaction();
+        foreach (var tx in transactions)
+        {
+            using var checkCmd = _connection.CreateCommand();
+            checkCmd.Transaction = txn;
+            checkCmd.CommandText = "SELECT COUNT(*) FROM transactions WHERE dedup_key = @key;";
+            checkCmd.Parameters.AddWithValue("@key", tx.DedupKey);
+            if ((long)(checkCmd.ExecuteScalar() ?? 0L) > 0) { skipped++; continue; }
+
+            using var insCmd = _connection.CreateCommand();
+            insCmd.Transaction = txn;
+            insCmd.CommandText = @"
+                INSERT INTO transactions
+                    (dedup_key, sequence_number, execution_date, value_date,
+                     amount, currency, account_number, transaction_type,
+                     counterpart, counterpart_name, communication, details, status)
+                VALUES
+                    (@key, @seq, @exec, @val,
+                     @amt, @cur, @acct, @type,
+                     @cpart, @cname, @comm, @det, @stat);";
+            insCmd.Parameters.AddWithValue("@key",   tx.DedupKey);
+            insCmd.Parameters.AddWithValue("@seq",   tx.SequenceNumber);
+            insCmd.Parameters.AddWithValue("@exec",  tx.ExecutionDate.ToString("yyyy-MM-dd"));
+            insCmd.Parameters.AddWithValue("@val",   tx.ValueDate.ToString("yyyy-MM-dd"));
+            insCmd.Parameters.AddWithValue("@amt",   tx.Amount.ToString(CultureInfo.InvariantCulture));
+            insCmd.Parameters.AddWithValue("@cur",   tx.Currency);
+            insCmd.Parameters.AddWithValue("@acct",  tx.AccountNumber);
+            insCmd.Parameters.AddWithValue("@type",  tx.TransactionType);
+            insCmd.Parameters.AddWithValue("@cpart", tx.Counterpart);
+            insCmd.Parameters.AddWithValue("@cname", tx.CounterpartName);
+            insCmd.Parameters.AddWithValue("@comm",  tx.Communication);
+            insCmd.Parameters.AddWithValue("@det",   tx.Details);
+            insCmd.Parameters.AddWithValue("@stat",  tx.Status);
+            insCmd.ExecuteNonQuery();
+            added++;
+        }
+        txn.Commit();
+        return (added, skipped);
+    }
+
+    /// <summary>Persists the CategoryId of each transaction back to the database.</summary>
+    public void SaveTransactionCategories(IEnumerable<Transaction> transactions)
+    {
+        using var txn = _connection.BeginTransaction();
+        foreach (var tx in transactions)
+        {
+            using var cmd = _connection.CreateCommand();
+            cmd.Transaction = txn;
+            if (tx.CategoryId.HasValue)
+            {
+                cmd.CommandText = "UPDATE transactions SET category_id = @cid WHERE dedup_key = @key;";
+                cmd.Parameters.AddWithValue("@cid", tx.CategoryId.Value);
+            }
+            else
+            {
+                cmd.CommandText = "UPDATE transactions SET category_id = NULL WHERE dedup_key = @key;";
+            }
+            cmd.Parameters.AddWithValue("@key", tx.DedupKey);
+            cmd.ExecuteNonQuery();
+        }
+        txn.Commit();
+    }
+
+    public int GetTransactionCount()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM transactions;";
+        return (int)(long)(cmd.ExecuteScalar() ?? 0L);
+    }
+
+    public void ClearTransactions()
+    {
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM transactions;";
         cmd.ExecuteNonQuery();
     }
 

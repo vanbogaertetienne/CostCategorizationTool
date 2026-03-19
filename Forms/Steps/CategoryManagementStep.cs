@@ -1,5 +1,6 @@
 using CostCategorizationTool.Data;
 using CostCategorizationTool.Models;
+using CostCategorizationTool.Services;
 
 namespace CostCategorizationTool.Forms.Steps;
 
@@ -27,7 +28,7 @@ public class CategoryManagementStep : UserControl
         // ── Description label ────────────────────────────────────────────────
         var descLabel = new Label
         {
-            Text     = "Manage expense categories. You can add, rename, or delete categories.",
+            Text     = Resources.CatDesc,
             AutoSize = false,
             Font     = new Font("Segoe UI", 10f),
             Location = new Point(16, 16),
@@ -44,7 +45,7 @@ public class CategoryManagementStep : UserControl
 
         var catLabel = new Label
         {
-            Text     = "Categories",
+            Text     = Resources.CatListLabel,
             Font     = new Font("Segoe UI", 10f, FontStyle.Bold),
             AutoSize = true,
             Location = new Point(0, 0)
@@ -58,24 +59,31 @@ public class CategoryManagementStep : UserControl
             SelectionMode = SelectionMode.One
         };
 
+        var smFont = new Font("Segoe UI", 9f);
+        int sbh = 28, sbx = 0, sby = 372;
         _btnAdd = new Button
         {
-            Text     = "Add",
-            Size     = new Size(62, 28),
-            Location = new Point(0, 372)
+            Text     = Resources.BtnAdd,
+            Size     = new Size(TextRenderer.MeasureText(Resources.BtnAdd, smFont).Width + 16, sbh),
+            Location = new Point(sbx, sby),
+            Font     = smFont
         };
+        sbx += _btnAdd.Width + 4;
         _btnRename = new Button
         {
-            Text     = "Rename",
-            Size     = new Size(70, 28),
-            Location = new Point(66, 372)
+            Text     = Resources.BtnRename,
+            Size     = new Size(TextRenderer.MeasureText(Resources.BtnRename, smFont).Width + 16, sbh),
+            Location = new Point(sbx, sby),
+            Font     = smFont
         };
+        sbx += _btnRename.Width + 4;
         _btnDelete = new Button
         {
-            Text     = "Delete",
-            Size     = new Size(62, 28),
-            Location = new Point(140, 372),
-            ForeColor = Color.DarkRed
+            Text      = Resources.BtnDelete,
+            Size      = new Size(TextRenderer.MeasureText(Resources.BtnDelete, smFont).Width + 16, sbh),
+            Location  = new Point(sbx, sby),
+            ForeColor = Color.DarkRed,
+            Font      = smFont
         };
 
         leftPanel.Controls.Add(catLabel);
@@ -93,7 +101,7 @@ public class CategoryManagementStep : UserControl
 
         var rulesLabel = new Label
         {
-            Text     = "Categorization Rules for selected category",
+            Text     = Resources.RulesListLabel,
             Font     = new Font("Segoe UI", 10f, FontStyle.Bold),
             AutoSize = true,
             Location = new Point(0, 0)
@@ -109,22 +117,26 @@ public class CategoryManagementStep : UserControl
             Font          = new Font("Segoe UI", 9.5f),
             Anchor        = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
         };
-        _rulesList.Columns.Add("Type",      80);
-        _rulesList.Columns.Add("Pattern",   300);
-        _rulesList.Columns.Add("Direction", 100);
+        _rulesList.Columns.Add(Resources.RuleColType,      80);
+        _rulesList.Columns.Add(Resources.RuleColPattern,   300);
+        _rulesList.Columns.Add(Resources.RuleColDirection, 100);
 
+        int rbx = 0;
         _btnAddRule = new Button
         {
-            Text     = "Add Rule",
-            Size     = new Size(90, 28),
-            Location = new Point(0, 372)
+            Text     = Resources.BtnAddRule,
+            Size     = new Size(TextRenderer.MeasureText(Resources.BtnAddRule, smFont).Width + 16, sbh),
+            Location = new Point(rbx, sby),
+            Font     = smFont
         };
+        rbx += _btnAddRule.Width + 4;
         _btnDeleteRule = new Button
         {
-            Text      = "Delete Rule",
-            Size      = new Size(100, 28),
-            Location  = new Point(96, 372),
-            ForeColor = Color.DarkRed
+            Text      = Resources.BtnDeleteRule,
+            Size      = new Size(TextRenderer.MeasureText(Resources.BtnDeleteRule, smFont).Width + 16, sbh),
+            Location  = new Point(rbx, sby),
+            ForeColor = Color.DarkRed,
+            Font      = smFont
         };
 
         rightPanel.Controls.Add(rulesLabel);
@@ -169,23 +181,28 @@ public class CategoryManagementStep : UserControl
 
         if (leftPanel != null)
         {
+            int lpw = Math.Max(_btnAdd.Width + _btnRename.Width + _btnDelete.Width + 12, 210);
             leftPanel.Location = new Point(16, 52);
-            leftPanel.Size     = new Size(210, h);
-            _categoryList.Size = new Size(210, h - 56);
-            _btnAdd.Location   = new Point(0, h - 48);
-            _btnRename.Location= new Point(66, h - 48);
-            _btnDelete.Location= new Point(140, h - 48);
+            leftPanel.Size     = new Size(lpw, h);
+            _categoryList.Size = new Size(lpw, h - 56);
+            int lbx = 0, lby = h - 48;
+            _btnAdd.Location    = new Point(lbx, lby); lbx += _btnAdd.Width + 4;
+            _btnRename.Location = new Point(lbx, lby); lbx += _btnRename.Width + 4;
+            _btnDelete.Location = new Point(lbx, lby);
         }
 
         if (rightPanel != null)
         {
-            int rw = ClientSize.Width - 244;
-            rightPanel.Location = new Point(232, 52);
+            int lpw  = leftPanel?.Width ?? 210;
+            int rpx  = 16 + lpw + 16;
+            int rw   = ClientSize.Width - rpx - 16;
+            rightPanel.Location = new Point(rpx, 52);
             rightPanel.Size     = new Size(Math.Max(rw, 200), h);
             _rulesList.Size     = new Size(Math.Max(rw, 200), h - 56);
             _rulesList.Columns[1].Width = Math.Max(100, rw - 80 - 100 - 4);
-            _btnAddRule.Location    = new Point(0, h - 48);
-            _btnDeleteRule.Location = new Point(96, h - 48);
+            int rbx2 = 0, rby = h - 48;
+            _btnAddRule.Location    = new Point(rbx2, rby); rbx2 += _btnAddRule.Width + 4;
+            _btnDeleteRule.Location = new Point(rbx2, rby);
         }
 
         // Description label width
@@ -215,10 +232,10 @@ public class CategoryManagementStep : UserControl
         var rules = _db.GetRulesForCategory(SelectedCategory.Id);
         foreach (var rule in rules)
         {
-            string typeStr = rule.RuleType == RuleType.IBAN ? "IBAN" : "Details";
-            string signStr = rule.AmountSign == AmountSign.Positive ? "Incoming (+)"
-                           : rule.AmountSign == AmountSign.Negative ? "Outgoing (−)"
-                           : "All";
+            string typeStr = rule.RuleType == RuleType.IBAN ? Resources.TypeIban : "Details";
+            string signStr = rule.AmountSign == AmountSign.Positive ? Resources.DirIncoming
+                           : rule.AmountSign == AmountSign.Negative ? Resources.DirOutgoing
+                           : Resources.DirAll;
             var item = new ListViewItem(typeStr);
             item.SubItems.Add(rule.Pattern);
             item.SubItems.Add(signStr);
@@ -229,7 +246,7 @@ public class CategoryManagementStep : UserControl
 
     private void OnAddCategory(object? sender, EventArgs e)
     {
-        var name = ShowInputDialog("New category name:", "Add Category", "");
+        var name = ShowInputDialog(Resources.NewCatName, Resources.AddCatTitle, "");
         if (string.IsNullOrWhiteSpace(name)) return;
         _db.AddCategory(name);
         RefreshData();
@@ -237,8 +254,8 @@ public class CategoryManagementStep : UserControl
 
     private void OnRenameCategory(object? sender, EventArgs e)
     {
-        if (SelectedCategory == null) { MessageBox.Show("Select a category first."); return; }
-        var name = ShowInputDialog("New name:", "Rename Category", SelectedCategory.Name);
+        if (SelectedCategory == null) { MessageBox.Show(Resources.SelectCatFirst); return; }
+        var name = ShowInputDialog(Resources.NewNameLbl, Resources.RenameCatTitle, SelectedCategory.Name);
         if (string.IsNullOrWhiteSpace(name)) return;
         _db.UpdateCategory(SelectedCategory.Id, name);
         RefreshData();
@@ -246,10 +263,10 @@ public class CategoryManagementStep : UserControl
 
     private void OnDeleteCategory(object? sender, EventArgs e)
     {
-        if (SelectedCategory == null) { MessageBox.Show("Select a category first."); return; }
+        if (SelectedCategory == null) { MessageBox.Show(Resources.SelectCatFirst); return; }
         var result = MessageBox.Show(
-            $"Delete category \"{SelectedCategory.Name}\" and all its rules?",
-            "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            string.Format(Resources.DeleteCatMsg, SelectedCategory.Name),
+            Resources.ConfirmDeleteTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
         if (result != DialogResult.Yes) return;
         _db.DeleteCategory(SelectedCategory.Id);
         RefreshData();
@@ -259,7 +276,7 @@ public class CategoryManagementStep : UserControl
     {
         if (SelectedCategory == null)
         {
-            MessageBox.Show("Select a category first.", "No Category Selected",
+            MessageBox.Show(Resources.SelectCatFirst, Resources.NoCatSelectedTitle,
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
@@ -271,11 +288,11 @@ public class CategoryManagementStep : UserControl
 
     private void OnDeleteRule(object? sender, EventArgs e)
     {
-        if (_rulesList.SelectedItems.Count == 0) { MessageBox.Show("Select a rule first."); return; }
+        if (_rulesList.SelectedItems.Count == 0) { MessageBox.Show(Resources.SelectRuleFirst); return; }
         var rule = _rulesList.SelectedItems[0].Tag as CategoryRule;
         if (rule == null) return;
-        var result = MessageBox.Show($"Delete rule \"{rule.Pattern}\"?",
-            "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+        var result = MessageBox.Show(string.Format(Resources.DeleteRuleMsg, rule.Pattern),
+            Resources.ConfirmDeleteTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
         if (result != DialogResult.Yes) return;
         _db.DeleteRule(rule.Id);
         OnCategorySelected(null, EventArgs.Empty);
@@ -296,8 +313,12 @@ public class CategoryManagementStep : UserControl
         };
         var lbl = new Label { Text = prompt, AutoSize = true, Location = new Point(12, 12) };
         var txt = new TextBox { Location = new Point(12, 36), Width = 340, Text = defaultValue };
-        var ok  = new Button { Text = "OK",     DialogResult = DialogResult.OK,     Location = new Point(194, 72), Width = 80 };
-        var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(280, 72), Width = 80 };
+        var df  = SystemFonts.DefaultFont;
+        int canW = Math.Max(80, TextRenderer.MeasureText(Resources.Cancel, df).Width + 20);
+        int okW  = Math.Max(80, TextRenderer.MeasureText("OK",     df).Width + 20);
+        int rx   = txt.Right;
+        var cancel = new Button { Text = Resources.Cancel, DialogResult = DialogResult.Cancel, Size = new Size(canW, 28), Location = new Point(rx - canW,          72) };
+        var ok     = new Button { Text = "OK",     DialogResult = DialogResult.OK,     Size = new Size(okW,  28), Location = new Point(rx - canW - 8 - okW, 72) };
         form.Controls.AddRange(new Control[] { lbl, txt, ok, cancel });
         form.AcceptButton = ok;
         form.CancelButton = cancel;
@@ -327,37 +348,41 @@ public class AddRuleDialog : Form
     public AddRuleDialog()
     {
         SuspendLayout();
-        Text            = "Add Categorization Rule";
+        Text            = Resources.AddRuleTitle;
         Size            = new Size(420, 270);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition   = FormStartPosition.CenterParent;
         MaximizeBox     = false;
         MinimizeBox     = false;
 
-        var typeLabel = new Label { Text = "Rule type:", AutoSize = true, Location = new Point(12, 14) };
-        _rbIban    = new RadioButton { Text = "Match by Counterpart IBAN (exact, case-insensitive)", Location = new Point(12, 36), AutoSize = true, Checked = true };
-        _rbDetails = new RadioButton { Text = "Match by keyword in Details (contains, case-insensitive)", Location = new Point(12, 60), AutoSize = true };
+        var typeLabel = new Label { Text = Resources.RuleTypeLbl, AutoSize = true, Location = new Point(12, 14) };
+        _rbIban    = new RadioButton { Text = Resources.RbIban,    Location = new Point(12, 36), AutoSize = true, Checked = true };
+        _rbDetails = new RadioButton { Text = Resources.RbDetails, Location = new Point(12, 60), AutoSize = true };
 
-        var patternLabel = new Label { Text = "Pattern:", AutoSize = true, Location = new Point(12, 92) };
+        var patternLabel = new Label { Text = Resources.PatternLbl, AutoSize = true, Location = new Point(12, 92) };
         _txtPattern = new TextBox { Location = new Point(12, 110), Width = 378, Font = new Font("Consolas", 10f) };
 
         var grpDir = new GroupBox
         {
-            Text = "Transaction direction", Location = new Point(12, 136), Size = new Size(390, 52)
+            Text = Resources.DirectionLbl, Location = new Point(12, 136), Size = new Size(390, 52)
         };
-        _rbSignAny = new RadioButton { Text = "All",            Location = new Point(8,  18), AutoSize = true, Checked = true };
-        _rbSignPos = new RadioButton { Text = "Incoming (+)",   Location = new Point(70, 18), AutoSize = true };
-        _rbSignNeg = new RadioButton { Text = "Outgoing (−)",   Location = new Point(190, 18), AutoSize = true };
+        _rbSignAny = new RadioButton { Text = Resources.DirAll,      Location = new Point(8,  18), AutoSize = true, Checked = true };
+        _rbSignPos = new RadioButton { Text = Resources.DirIncoming, Location = new Point(70, 18), AutoSize = true };
+        _rbSignNeg = new RadioButton { Text = Resources.DirOutgoing, Location = new Point(190, 18), AutoSize = true };
         grpDir.Controls.AddRange(new Control[] { _rbSignAny, _rbSignPos, _rbSignNeg });
 
-        var ok     = new Button { Text = "Save Rule", DialogResult = DialogResult.OK,     Location = new Point(218, 198), Width = 90 };
-        var cancel = new Button { Text = "Cancel",    DialogResult = DialogResult.Cancel, Location = new Point(314, 198), Width = 80 };
+        var df2     = SystemFonts.DefaultFont;
+        int saveW   = Math.Max(80, TextRenderer.MeasureText(Resources.BtnSaveRule, df2).Width + 20);
+        int cancelW = Math.Max(80, TextRenderer.MeasureText(Resources.Cancel,      df2).Width + 20);
+        int rx2     = _txtPattern.Right;
+        var cancel  = new Button { Text = Resources.Cancel,      DialogResult = DialogResult.Cancel, Size = new Size(cancelW, 28), Location = new Point(rx2 - cancelW,           198) };
+        var ok      = new Button { Text = Resources.BtnSaveRule, DialogResult = DialogResult.OK,     Size = new Size(saveW,   28), Location = new Point(rx2 - cancelW - 8 - saveW, 198) };
 
         ok.Click += (_, _) =>
         {
             if (string.IsNullOrWhiteSpace(_txtPattern.Text))
             {
-                MessageBox.Show("Please enter a pattern.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(Resources.EnterPattern, Resources.ValidationTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 DialogResult = DialogResult.None;
                 return;
             }

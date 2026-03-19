@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+
+  <!-- App -->
+  <data name="AppTitle" xml:space="preserve"><value>Cost Categorization Tool</value></data>
+  <data name="NewProject" xml:space="preserve"><value>New Project</value></data>
+  <data name="OpenProject" xml:space="preserve"><value>Open Project</value></data>
+  <data name="CloseProject" xml:space="preserve"><value>Close Project</value></data>
+  <data name="RecentProjects" xml:space="preserve"><value>Recent Projects</value></data>
+  <data name="ImportCsv" xml:space="preserve"><value>Import CSV…</value></data>
+  <data name="ViewSummary" xml:space="preserve"><value>View Summary…</value></data>
+  <data name="ExportExcel" xml:space="preserve"><value>Export to Excel…</value></data>
+  <data name="Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="Tools" xml:space="preserve"><value>Tools</value></data>
+  <data name="Settings" xml:space="preserve"><value>Settings…</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="File" xml:space="preserve"><value>File</value></data>
+
+  <!-- HomePanel -->
+  <data name="HomeTitle" xml:space="preserve"><value>Cost Categorization Tool</value></data>
+  <data name="HomeSubtitle" xml:space="preserve"><value>Open an existing project or create a new one to get started.</value></data>
+  <data name="BtnNewProject" xml:space="preserve"><value>New Project…</value></data>
+  <data name="BtnOpenProject" xml:space="preserve"><value>Open Project…</value></data>
+  <data name="LblRecentProjects" xml:space="preserve"><value>Recent Projects</value></data>
+  <data name="NotFound" xml:space="preserve"><value>  [not found]</value></data>
+  <data name="FileNotFoundTitle" xml:space="preserve"><value>File Not Found</value></data>
+  <data name="FileNotFoundMsg" xml:space="preserve"><value>The project file no longer exists:
+{0}</value></data>
+  <data name="CreateProjectTitle" xml:space="preserve"><value>Create New Project</value></data>
+  <data name="OpenProjectTitle" xml:space="preserve"><value>Open Project</value></data>
+  <data name="ProjectFilter" xml:space="preserve"><value>Cost Categorization Project (*.ccp)|*.ccp|All files|*.*</value></data>
+  <data name="CsvFilter" xml:space="preserve"><value>CSV files|*.csv|All files|*.*</value></data>
+
+  <!-- MainForm -->
+  <data name="StepImport" xml:space="preserve"><value>1  Import CSV…</value></data>
+  <data name="StepCategorize" xml:space="preserve"><value>2  Categorize</value></data>
+  <data name="StepSummary" xml:space="preserve"><value>3  View Summary…</value></data>
+  <data name="NoTransactionsYet" xml:space="preserve"><value>This project has no transactions yet.
+
+Do you want to import a CSV file now?</value></data>
+  <data name="NewProjectTitle" xml:space="preserve"><value>New Project</value></data>
+  <data name="ImportCompleteTitle" xml:space="preserve"><value>Import Complete</value></data>
+  <data name="ImportCompleteMsg" xml:space="preserve"><value>Import complete.
+
+{0} new transaction(s) added.
+{1} duplicate(s) skipped.</value></data>
+  <data name="ImportError" xml:space="preserve"><value>Import Error</value></data>
+  <data name="ImportFailed" xml:space="preserve"><value>Import failed:
+{0}</value></data>
+  <data name="NoProjectTitle" xml:space="preserve"><value>No Project</value></data>
+  <data name="OpenProjectFirst" xml:space="preserve"><value>Open a project first to access settings.</value></data>
+  <data name="CouldNotOpen" xml:space="preserve"><value>Could not open project:
+{0}</value></data>
+  <data name="ErrorTitle" xml:space="preserve"><value>Error</value></data>
+  <data name="SummaryTitle" xml:space="preserve"><value>Summary</value></data>
+
+  <!-- TransactionCategorizationStep -->
+  <data name="BtnAutoCateg" xml:space="preserve"><value>Auto-Categorize from Rules</value></data>
+  <data name="BtnManageCats" xml:space="preserve"><value>Manage Categories…</value></data>
+  <data name="BtnSplitGroup" xml:space="preserve"><value>Split Group…</value></data>
+  <data name="ChkUncategorized" xml:space="preserve"><value>Uncategorized only</value></data>
+  <data name="SelectGroupPrompt" xml:space="preserve"><value>Select a group above to see its transactions</value></data>
+  <data name="GColCount" xml:space="preserve"><value>#</value></data>
+  <data name="GColType" xml:space="preserve"><value>Type</value></data>
+  <data name="GColPattern" xml:space="preserve"><value>Pattern / Name</value></data>
+  <data name="GColDirection" xml:space="preserve"><value>Direction</value></data>
+  <data name="GColFrequency" xml:space="preserve"><value>Frequency</value></data>
+  <data name="GColTotal" xml:space="preserve"><value>Total</value></data>
+  <data name="GColCategory" xml:space="preserve"><value>Category</value></data>
+  <data name="DColDate" xml:space="preserve"><value>Date</value></data>
+  <data name="DColAmount" xml:space="preserve"><value>Amount</value></data>
+  <data name="DColCounterpart" xml:space="preserve"><value>Counterpart</value></data>
+  <data name="DColDescription" xml:space="preserve"><value>Description</value></data>
+  <data name="DColCategory" xml:space="preserve"><value>Category</value></data>
+  <data name="ProgressFmt" xml:space="preserve"><value>{0} of {1} groups categorized</value></data>
+  <data name="DetailHeaderFmt" xml:space="preserve"><value>Transactions in "{0}" — {1} transaction(s), total: {2:N2}</value></data>
+  <data name="TypeIban" xml:space="preserve"><value>IBAN</value></data>
+  <data name="TypeKeyword" xml:space="preserve"><value>Keyword</value></data>
+  <data name="CombineGroups" xml:space="preserve"><value>Combine Groups</value></data>
+  <data name="CannotSplitTitle" xml:space="preserve"><value>Cannot Split Further</value></data>
+  <data name="CannotSplitMsg" xml:space="preserve"><value>No distinct sub-patterns were found within this group.
+
+Group pattern:  "{0}"
+Tokens removed: {1}
+
+After removing these tokens, all transactions share the same remaining
+keywords (or have none left).</value></data>
+
+  <!-- SummaryStep -->
+  <data name="SumTitle" xml:space="preserve"><value>Categorization Summary</value></data>
+  <data name="SumColCategory" xml:space="preserve"><value>Category</value></data>
+  <data name="SumColCount" xml:space="preserve"><value># Transactions</value></data>
+  <data name="SumColTotal" xml:space="preserve"><value>Total Amount (€)</value></data>
+  <data name="SumUncategorized" xml:space="preserve"><value>Uncategorized</value></data>
+  <data name="SumIncome" xml:space="preserve"><value>INCOME</value></data>
+  <data name="SumTotalExp" xml:space="preserve"><value>TOTAL EXPENSES</value></data>
+  <data name="SumGrandTotal" xml:space="preserve"><value>Grand total expenses: {0:N2} {1}</value></data>
+  <data name="BtnExportCsv" xml:space="preserve"><value>Export to CSV</value></data>
+  <data name="BtnExportExcel" xml:space="preserve"><value>Export to Excel…</value></data>
+  <data name="ExportTitle" xml:space="preserve"><value>Export Summary</value></data>
+  <data name="ExportFilter" xml:space="preserve"><value>CSV files|*.csv|All files|*.*</value></data>
+  <data name="ExportExcelTitle" xml:space="preserve"><value>Export to Excel</value></data>
+  <data name="ExportExcelFilter" xml:space="preserve"><value>Excel workbook (*.xlsx)|*.xlsx|All files|*.*</value></data>
+  <data name="ExportComplete" xml:space="preserve"><value>Export Complete</value></data>
+  <data name="ExportCompleteMsg" xml:space="preserve"><value>Exported successfully to:
+{0}</value></data>
+  <data name="ExportError" xml:space="preserve"><value>Export Error</value></data>
+  <data name="ExportFailed" xml:space="preserve"><value>Export failed:
+{0}</value></data>
+
+  <!-- SettingsDialog -->
+  <data name="SettTitle" xml:space="preserve"><value>Settings</value></data>
+  <data name="SettLanguage" xml:space="preserve"><value>Language</value></data>
+  <data name="SettLangNote" xml:space="preserve"><value>Restart the application to apply the language change.</value></data>
+  <data name="SettMaintenance" xml:space="preserve"><value>Maintenance</value></data>
+  <data name="BtnResetDb" xml:space="preserve"><value>Reset Database</value></data>
+  <data name="BtnResetTx" xml:space="preserve"><value>Reset Transactions</value></data>
+  <data name="ResetDbDesc" xml:space="preserve"><value>Deletes all your categories and rules, and restores the original
+default categories (Food &amp; Groceries, Transport, Leisure, …).
+Your loaded transactions are not affected.</value></data>
+  <data name="ResetTxDesc" xml:space="preserve"><value>Clears all transactions stored in this project.
+You can re-import a CSV file afterwards.</value></data>
+  <data name="ResetDbConfirmMsg" xml:space="preserve"><value>This will permanently delete all your categories and categorisation rules,
+and restore the original default categories.
+
+This cannot be undone. Are you sure?</value></data>
+  <data name="ResetDbConfirmTitle" xml:space="preserve"><value>Reset Database</value></data>
+  <data name="ResetDbDoneMsg" xml:space="preserve"><value>The database has been reset.
+Default categories have been restored.</value></data>
+  <data name="ResetDbDoneTitle" xml:space="preserve"><value>Reset Complete</value></data>
+  <data name="ResetTxConfirmMsg" xml:space="preserve"><value>This will clear all transactions stored in this project.
+
+Are you sure?</value></data>
+  <data name="ResetTxConfirmTitle" xml:space="preserve"><value>Reset Transactions</value></data>
+  <data name="ResetTxDoneMsg" xml:space="preserve"><value>Transactions have been cleared.</value></data>
+  <data name="ResetTxDoneTitle" xml:space="preserve"><value>Transactions Cleared</value></data>
+
+  <!-- CategoryManagementStep -->
+  <data name="CatDesc" xml:space="preserve"><value>Manage expense categories. You can add, rename, or delete categories.</value></data>
+  <data name="CatTitle" xml:space="preserve"><value>Manage Categories &amp; Rules</value></data>
+  <data name="CatListLabel" xml:space="preserve"><value>Categories</value></data>
+  <data name="RulesListLabel" xml:space="preserve"><value>Categorization Rules for selected category</value></data>
+  <data name="BtnAdd" xml:space="preserve"><value>Add</value></data>
+  <data name="BtnRename" xml:space="preserve"><value>Rename</value></data>
+  <data name="BtnDelete" xml:space="preserve"><value>Delete</value></data>
+  <data name="BtnAddRule" xml:space="preserve"><value>Add Rule</value></data>
+  <data name="BtnDeleteRule" xml:space="preserve"><value>Delete Rule</value></data>
+  <data name="RuleColType" xml:space="preserve"><value>Type</value></data>
+  <data name="RuleColPattern" xml:space="preserve"><value>Pattern</value></data>
+  <data name="RuleColDirection" xml:space="preserve"><value>Direction</value></data>
+  <data name="SelectCatFirst" xml:space="preserve"><value>Select a category first.</value></data>
+  <data name="SelectRuleFirst" xml:space="preserve"><value>Select a rule first.</value></data>
+  <data name="NoCatSelectedTitle" xml:space="preserve"><value>No Category Selected</value></data>
+  <data name="DeleteCatMsg" xml:space="preserve"><value>Delete category "{0}" and all its rules?</value></data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve"><value>Confirm Delete</value></data>
+  <data name="DeleteRuleMsg" xml:space="preserve"><value>Delete rule "{0}"?</value></data>
+  <data name="AddRuleTitle" xml:space="preserve"><value>Add Categorization Rule</value></data>
+  <data name="RuleTypeLbl" xml:space="preserve"><value>Rule type:</value></data>
+  <data name="RbIban" xml:space="preserve"><value>Match by Counterpart IBAN (exact, case-insensitive)</value></data>
+  <data name="RbDetails" xml:space="preserve"><value>Match by keyword in Details (contains, case-insensitive)</value></data>
+  <data name="PatternLbl" xml:space="preserve"><value>Pattern:</value></data>
+  <data name="DirectionLbl" xml:space="preserve"><value>Transaction direction</value></data>
+  <data name="DirAll" xml:space="preserve"><value>All</value></data>
+  <data name="DirIncoming" xml:space="preserve"><value>Incoming (+)</value></data>
+  <data name="DirOutgoing" xml:space="preserve"><value>Outgoing (−)</value></data>
+  <data name="BtnSaveRule" xml:space="preserve"><value>Save Rule</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="ValidationTitle" xml:space="preserve"><value>Validation</value></data>
+  <data name="EnterPattern" xml:space="preserve"><value>Please enter a pattern.</value></data>
+  <data name="NewCatName" xml:space="preserve"><value>New category name:</value></data>
+  <data name="AddCatTitle" xml:space="preserve"><value>Add Category</value></data>
+  <data name="NewNameLbl" xml:space="preserve"><value>New name:</value></data>
+  <data name="RenameCatTitle" xml:space="preserve"><value>Rename Category</value></data>
+
+  <!-- Frequency / Direction labels -->
+  <data name="FreqWeekly" xml:space="preserve"><value>Weekly</value></data>
+  <data name="FreqMonthly" xml:space="preserve"><value>Monthly</value></data>
+  <data name="FreqQuarterly" xml:space="preserve"><value>Quarterly</value></data>
+  <data name="FreqYearly" xml:space="preserve"><value>Annual</value></data>
+  <data name="FreqOccasional" xml:space="preserve"><value>Occasional</value></data>
+  <data name="DirExpense" xml:space="preserve"><value>Expense</value></data>
+  <data name="DirIncome" xml:space="preserve"><value>Income</value></data>
+  <data name="DirMixed" xml:space="preserve"><value>Mixed</value></data>
+</root>

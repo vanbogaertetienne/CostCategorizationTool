@@ -15,7 +15,9 @@ public class TransactionCategorizationStep : UserControl
     private List<TransactionGroup> _groups       = new();
 
     private bool _suppressEvents;
+    private TransactionGroup? _selectedGroup;
 
+    // Groups grid column indices
     private const int ColCount     = 0;
     private const int ColType      = 1;
     private const int ColPattern   = 2;
@@ -23,6 +25,13 @@ public class TransactionCategorizationStep : UserControl
     private const int ColFrequency = 4;
     private const int ColTotal     = 5;
     private const int ColCategory  = 6;
+
+    // Detail grid column indices
+    private const int DColDate        = 0;
+    private const int DColAmount      = 1;
+    private const int DColCounterpart = 2;
+    private const int DColDescription = 3;
+    private const int DColCategory    = 4;
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private readonly Button       _btnAutoCateg;
@@ -40,54 +49,94 @@ public class TransactionCategorizationStep : UserControl
         SuspendLayout();
         BackColor = Color.White;
 
+
         // ── Top bar ──────────────────────────────────────────────────────────
         var topBar = new Panel
         {
             Dock      = DockStyle.Top,
-            Height    = 44,
+            Height    = 56,
             BackColor = Color.White
         };
 
+        var btnFont = new Font("Segoe UI", 10f);
+        int bx = 8, by = 8, bh = 40;
+
         _btnAutoCateg = new Button
         {
-            Text     = "Auto-Categorize from Rules",
-            Size     = new Size(190, 28),
-            Location = new Point(8, 8)
+            Text     = Resources.BtnAutoCateg,
+            Size     = new Size(BW(Resources.BtnAutoCateg, btnFont), bh),
+            Location = new Point(bx, by),
+            Font     = btnFont
         };
+        bx += _btnAutoCateg.Width + 8;
 
         _btnManageCats = new Button
         {
-            Text     = "Manage Categories…",
-            Size     = new Size(150, 28),
-            Location = new Point(206, 8)
+            Text     = Resources.BtnManageCats,
+            Size     = new Size(BW(Resources.BtnManageCats, btnFont), bh),
+            Location = new Point(bx, by),
+            Font     = btnFont
         };
+        bx += _btnManageCats.Width + 8;
 
         _btnSplit = new Button
         {
-            Text     = "Split Group…",
-            Size     = new Size(110, 28),
-            Location = new Point(364, 8),
+            Text     = Resources.BtnSplitGroup,
+            Size     = new Size(BW(Resources.BtnSplitGroup, btnFont), bh),
+            Location = new Point(bx, by),
+            Font     = btnFont,
             Enabled  = false
         };
 
+        // Right-anchored container for checkbox + progress label
+        var rightBar = new Panel
+        {
+            Anchor    = AnchorStyles.Top | AnchorStyles.Right,
+            BackColor = Color.White
+        };
+        // Size/location are set in the Resize handler; set initial values too:
+        // (will be corrected on first layout)
+
         _chkUncategorizedOnly = new CheckBox
         {
-            Text      = "Show uncategorized only",
-            AutoSize  = true,
-            Location  = new Point(484, 12),
-            Font      = new Font("Segoe UI", 9.5f)
+            Text     = Resources.ChkUncategorized,
+            AutoSize = true,
+            Location = new Point(0, 10),
+            Font     = new Font("Segoe UI", 10f)
         };
 
         _lblProgress = new Label
         {
             Text      = "",
-            AutoSize  = true,
-            Location  = new Point(680, 14),
-            Font      = new Font("Segoe UI", 9.5f),
+            AutoSize  = false,
+            Size      = new Size(240, 24),
+            Location  = new Point(0, 12),   // X set in layout
+            Font      = new Font("Segoe UI", 10f),
             ForeColor = Color.DimGray
         };
 
-        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnSplit, _chkUncategorizedOnly, _lblProgress });
+        rightBar.Controls.Add(_chkUncategorizedOnly);
+        rightBar.Controls.Add(_lblProgress);
+        topBar.Controls.Add(rightBar);
+
+        // Layout handler to position rightBar and its children
+        void layoutTopBar()
+        {
+            if (topBar.Width == 0) return;
+            int chkW = _chkUncategorizedOnly.PreferredSize.Width + 8;
+            int lblW = 220;
+            int totalW = chkW + 16 + lblW;
+            int rightBarX = Math.Max(_btnSplit.Right + 12, topBar.Width - totalW - 12);
+            rightBar.Location = new Point(rightBarX, 0);
+            rightBar.Size     = new Size(topBar.Width - rightBarX, topBar.Height);
+            _chkUncategorizedOnly.Location = new Point(0, (topBar.Height - _chkUncategorizedOnly.PreferredSize.Height) / 2);
+            _lblProgress.Location = new Point(chkW + 12, (topBar.Height - 24) / 2);
+            _lblProgress.Width    = lblW;
+        }
+        topBar.Resize += (_, _) => layoutTopBar();
+        Resize         += (_, _) => layoutTopBar();
+
+        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnSplit });
 
         // ── Groups grid ──────────────────────────────────────────────────────
         _groupsGrid = new DataGridView
@@ -98,12 +147,15 @@ public class TransactionCategorizationStep : UserControl
             AllowUserToDeleteRows       = false,
             RowHeadersVisible           = false,
             ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+            ColumnHeadersHeight         = 36,
             AutoSizeColumnsMode         = DataGridViewAutoSizeColumnsMode.None,
             EditMode                    = DataGridViewEditMode.EditOnEnter,
             BorderStyle                 = BorderStyle.None,
             BackgroundColor             = SystemColors.Window,
-            MultiSelect                 = false
+            MultiSelect                 = true,
+            Font                        = new Font("Segoe UI", 10f)
         };
+        _groupsGrid.RowTemplate.Height = 40;
 
         _groupsGrid.DataError += (_, e) => e.Cancel = true;
         _groupsGrid.CellValueChanged += OnGroupCategoryChanged;
@@ -125,12 +177,25 @@ public class TransactionCategorizationStep : UserControl
             }
         };
 
+        // ── Context menu ─────────────────────────────────────────────────────
+        var ctxMenu   = new ContextMenuStrip();
+        var miCombine = new ToolStripMenuItem(Resources.CombineGroups);
+        miCombine.Click += OnCombineGroups;
+        ctxMenu.Items.Add(miCombine);
+        ctxMenu.Opening += (_, e) =>
+        {
+            int sel = _groupsGrid.SelectedRows.Count;
+            miCombine.Enabled = sel >= 2;
+            e.Cancel = sel == 0;
+        };
+        _groupsGrid.ContextMenuStrip = ctxMenu;
+
         // ── Detail panel ─────────────────────────────────────────────────────
         _lblDetailHeader = new Label
         {
             Dock      = DockStyle.Top,
             Height    = 24,
-            Text      = "Select a group above to see its transactions",
+            Text      = Resources.SelectGroupPrompt,
             Font      = new Font("Segoe UI", 9f, FontStyle.Italic),
             ForeColor = Color.DimGray,
             Padding   = new Padding(4, 4, 0, 0)
@@ -143,15 +208,27 @@ public class TransactionCategorizationStep : UserControl
             AllowUserToAddRows          = false,
             AllowUserToDeleteRows       = false,
             RowHeadersVisible           = false,
-            ReadOnly                    = true,
             ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing,
+            ColumnHeadersHeight         = 36,
             AutoSizeColumnsMode         = DataGridViewAutoSizeColumnsMode.None,
+            EditMode                    = DataGridViewEditMode.EditOnEnter,
             BorderStyle                 = BorderStyle.None,
-            BackgroundColor             = SystemColors.Window
+            BackgroundColor             = SystemColors.Window,
+            Font                        = new Font("Segoe UI", 10f)
+        };
+        _detailGrid.RowTemplate.Height = 40;
+        _detailGrid.DataError += (_, e) => e.Cancel = true;
+        _detailGrid.CellValueChanged += OnDetailCategoryChanged;
+        _detailGrid.CurrentCellDirtyStateChanged += (_, _) =>
+        {
+            if (_suppressEvents) return;
+            if (_detailGrid.CurrentCell?.OwningColumn?.Index == DColCategory
+                && _detailGrid.IsCurrentCellDirty)
+                _detailGrid.CommitEdit(DataGridViewDataErrorContexts.Commit);
         };
         _detailGrid.SortCompare += (_, e) =>
         {
-            if (e.Column.Name == "Amount")
+            if (e.Column.Index == DColAmount)
             {
                 e.SortResult = ParseDecimal(e.CellValue1).CompareTo(ParseDecimal(e.CellValue2));
                 e.Handled    = true;
@@ -167,9 +244,10 @@ public class TransactionCategorizationStep : UserControl
         {
             Dock             = DockStyle.Fill,
             Orientation      = Orientation.Horizontal,
-            SplitterDistance = 320,
+            SplitterDistance = 340,
+            SplitterWidth    = 8,
             Panel1MinSize    = 120,
-            Panel2MinSize    = 100
+            Panel2MinSize    = 120
         };
         split.Panel1.Controls.Add(_groupsGrid);
         split.Panel2.Controls.Add(detailPanel);
@@ -187,19 +265,46 @@ public class TransactionCategorizationStep : UserControl
 
     // ── Public API ───────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Loads transactions from the database and refreshes the UI.
+    /// Does NOT run auto-categorization: categories stored in the database are
+    /// shown exactly as-is, and no rule is applied automatically.
+    /// Use the "Auto-Categorize from Rules" button for explicit rule application.
+    /// </summary>
+    public void LoadFromDatabase()
+    {
+        _transactions = _db.GetTransactions();
+        _categories   = _db.GetCategories();
+        _groups       = _grouperService.Group(_transactions);
+        MapCategoriesToGroups();
+        BuildGrids();
+        PopulateGroupsGrid();
+        UpdateProgress();
+    }
+
+    /// <summary>
+    /// Parses the given CSV file and imports new transactions into the database.
+    /// Returns counts of added and skipped records, then reloads the UI.
+    /// </summary>
+    public (int added, int skipped) ImportCsv(string csvPath)
+    {
+        var parser = new CsvParserService();
+        var parsed = parser.ParseFile(csvPath);
+        var (added, skipped) = _db.ImportTransactions(parsed);
+        LoadFromDatabase();
+        return (added, skipped);
+    }
+
+    /// <summary>Loads an in-memory list (used when carrying over from a CSV load).</summary>
     public void LoadTransactions(List<Transaction> transactions)
     {
         _transactions = transactions;
         _categories   = _db.GetCategories();
 
-        // Auto-categorize with existing rules first
         var rules = _db.GetRules();
         _categorizationService.AutoCategorize(_transactions, rules);
 
-        // Build groups
         _groups = _grouperService.Group(_transactions);
-
-        // Map auto-categorized results back to groups
         MapCategoriesToGroups();
 
         BuildGrids();
@@ -214,31 +319,32 @@ public class TransactionCategorizationStep : UserControl
 
     private void BuildGrids()
     {
+
         // Groups grid columns
         _groupsGrid.Columns.Clear();
 
         _groupsGrid.Columns.Add(new DataGridViewTextBoxColumn
-            { Name = "Count", HeaderText = "#", Width = 38, ReadOnly = true });
+            { Name = "Count", HeaderText = Resources.GColCount, Width = 38, ReadOnly = true });
         _groupsGrid.Columns.Add(new DataGridViewTextBoxColumn
-            { Name = "Type", HeaderText = "Type", Width = 62, ReadOnly = true });
+            { Name = "Type", HeaderText = Resources.GColType, Width = 62, ReadOnly = true });
 
         _groupsGrid.Columns.Add(new DataGridViewTextBoxColumn
-            { Name = "Pattern", HeaderText = "Pattern / Name", Width = 260, ReadOnly = true });
+            { Name = "Pattern", HeaderText = Resources.GColPattern, Width = 260, ReadOnly = true });
 
         _groupsGrid.Columns.Add(new DataGridViewTextBoxColumn
-            { Name = "Direction", HeaderText = "Direction", Width = 80, ReadOnly = true });
+            { Name = "Direction", HeaderText = Resources.GColDirection, Width = 80, ReadOnly = true });
 
         _groupsGrid.Columns.Add(new DataGridViewTextBoxColumn
-            { Name = "Frequency", HeaderText = "Frequency", Width = 82, ReadOnly = true });
+            { Name = "Frequency", HeaderText = Resources.GColFrequency, Width = 82, ReadOnly = true });
 
         var totalCol = new DataGridViewTextBoxColumn
-            { Name = "Total", HeaderText = "Total", Width = 90, ReadOnly = true };
+            { Name = "Total", HeaderText = Resources.GColTotal, Width = 90, ReadOnly = true };
         totalCol.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         _groupsGrid.Columns.Add(totalCol);
 
         var catCol = new DataGridViewComboBoxColumn
         {
-            Name = "Category", HeaderText = "Category", Width = 170, FlatStyle = FlatStyle.Flat
+            Name = "Category", HeaderText = Resources.GColCategory, Width = 170, FlatStyle = FlatStyle.Flat
         };
         catCol.Items.Add("");
         foreach (var cat in _categories)
@@ -252,20 +358,33 @@ public class TransactionCategorizationStep : UserControl
         _detailGrid.Columns.Clear();
 
         _detailGrid.Columns.Add(new DataGridViewTextBoxColumn
-            { Name = "Date", HeaderText = "Date", Width = 90 });
+            { Name = "Date", HeaderText = Resources.DColDate, Width = 100, ReadOnly = true });
 
         var amtCol = new DataGridViewTextBoxColumn
-            { Name = "Amount", HeaderText = "Amount", Width = 90 };
+            { Name = "Amount", HeaderText = Resources.DColAmount, Width = 100, ReadOnly = true };
         amtCol.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         _detailGrid.Columns.Add(amtCol);
 
         _detailGrid.Columns.Add(new DataGridViewTextBoxColumn
-            { Name = "Counterpart", HeaderText = "Counterpart", Width = 130 });
+            { Name = "Counterpart", HeaderText = Resources.DColCounterpart, Width = 150, ReadOnly = true });
 
         var descCol = new DataGridViewTextBoxColumn
-            { Name = "Description", HeaderText = "Description" };
+            { Name = "Description", HeaderText = Resources.DColDescription, ReadOnly = true };
         descCol.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         _detailGrid.Columns.Add(descCol);
+
+        var detailCatCol = new DataGridViewComboBoxColumn
+        {
+            Name       = "Category",
+            HeaderText = Resources.DColCategory,
+            Width      = 180,
+            FlatStyle  = FlatStyle.Flat,
+            ReadOnly   = false
+        };
+        detailCatCol.Items.Add("");
+        foreach (var cat in _categories)
+            detailCatCol.Items.Add(cat.Name);
+        _detailGrid.Columns.Add(detailCatCol);
     }
 
     private void PopulateGroupsGrid()
@@ -279,7 +398,7 @@ public class TransactionCategorizationStep : UserControl
 
         foreach (var group in visibleGroups)
         {
-            string typeLabel = group.RuleType == RuleType.IBAN ? "IBAN" : "Keyword";
+            string typeLabel = group.RuleType == RuleType.IBAN ? Resources.TypeIban : Resources.TypeKeyword;
             string catName   = group.CategoryId.HasValue
                 ? _categories.FirstOrDefault(c => c.Id == group.CategoryId)?.Name ?? ""
                 : "";
@@ -300,6 +419,7 @@ public class TransactionCategorizationStep : UserControl
         }
 
         _suppressEvents = false;
+        FitColumns(_groupsGrid);
     }
 
     private static void StyleGroupRow(DataGridViewRow row, TransactionGroup group)
@@ -324,6 +444,19 @@ public class TransactionCategorizationStep : UserControl
         row.DefaultCellStyle.BackColor = bg;
     }
 
+    private static int BW(string text, Font font) =>
+        TextRenderer.MeasureText(text, font).Width + 24;
+
+    private static void FitColumns(DataGridView grid)
+    {
+        if (!grid.IsHandleCreated || grid.Columns.Count == 0) return;
+        foreach (DataGridViewColumn col in grid.Columns)
+        {
+            if (col.AutoSizeMode != DataGridViewAutoSizeColumnMode.Fill)
+                grid.AutoResizeColumn(col.Index, DataGridViewAutoSizeColumnMode.AllCells);
+        }
+    }
+
     private static Color Blend(Color a, Color b, float t) => Color.FromArgb(
         (int)(a.R + (b.R - a.R) * t),
         (int)(a.G + (b.G - a.G) * t),
@@ -341,37 +474,56 @@ public class TransactionCategorizationStep : UserControl
         }
         _suppressEvents = false;
         UpdateProgress();
+
+        // Refresh detail grid override highlights when group categories change
+        if (_selectedGroup != null) PopulateDetailGrid(_selectedGroup);
     }
 
     private void PopulateDetailGrid(TransactionGroup group)
     {
+        _suppressEvents = true;
         _detailGrid.Rows.Clear();
 
         foreach (var tx in group.Transactions.OrderBy(t => t.ExecutionDate))
         {
+            string catName = tx.CategoryId.HasValue
+                ? _categories.FirstOrDefault(c => c.Id == tx.CategoryId)?.Name ?? ""
+                : "";
+
             _detailGrid.Rows.Add(
                 tx.ExecutionDate.ToString("dd/MM/yyyy"),
                 tx.Amount.ToString("N2"),
                 string.IsNullOrWhiteSpace(tx.CounterpartName) ? tx.Counterpart : tx.CounterpartName,
-                tx.Details);
+                tx.Details,
+                catName);
 
             var row = _detailGrid.Rows[_detailGrid.Rows.Count - 1];
             row.Tag = tx;
+
+            // Color base by income/expense
             row.DefaultCellStyle.BackColor = tx.Amount >= 0
                 ? Color.FromArgb(240, 255, 240)
                 : Color.FromArgb(255, 242, 242);
+
+            // Highlight category cell when this transaction's category differs from the group
+            bool overridden = tx.CategoryId != group.CategoryId;
+            row.Cells[DColCategory].Style.BackColor = overridden
+                ? Color.FromArgb(255, 245, 200)   // amber tint = individual override
+                : row.DefaultCellStyle.BackColor;
         }
 
-        _lblDetailHeader.Text      = $"Transactions in \"{group.DisplayName}\" — {group.Count} transaction(s), total: {group.Total:N2}";
+        _lblDetailHeader.Text      = string.Format(Resources.DetailHeaderFmt, group.DisplayName, group.Count, group.Total);
         _lblDetailHeader.ForeColor = Color.FromArgb(50, 50, 120);
-        _lblDetailHeader.Font      = new Font("Segoe UI", 9f, FontStyle.Bold);
+        _lblDetailHeader.Font      = new Font("Segoe UI", 10f, FontStyle.Bold);
+        _suppressEvents = false;
+        FitColumns(_detailGrid);
     }
 
     private void UpdateProgress()
     {
         int total = _groups.Count;
         int done  = _groups.Count(g => g.CategoryId.HasValue);
-        _lblProgress.Text      = $"{done} of {total} groups categorized";
+        _lblProgress.Text      = string.Format(Resources.ProgressFmt, done, total);
         _lblProgress.ForeColor = done == total && total > 0 ? Color.DarkGreen : Color.DimGray;
     }
 
@@ -382,6 +534,11 @@ public class TransactionCategorizationStep : UserControl
     /// then propagates that category back to every transaction in the group.
     /// This keeps the group and all its transactions in sync in both directions.
     /// </summary>
+    /// <summary>
+    /// Derives each group's displayed category from the majority of its transactions.
+    /// Individual transaction categories are NOT overwritten — this allows per-transaction overrides.
+    /// Group-level propagation only happens when the user explicitly assigns via the groups grid.
+    /// </summary>
     private void MapCategoriesToGroups()
     {
         foreach (var group in _groups)
@@ -391,11 +548,6 @@ public class TransactionCategorizationStep : UserControl
                 .GroupBy(t => t.CategoryId!.Value)
                 .OrderByDescending(g => g.Count())
                 .FirstOrDefault()?.Key;
-
-            // Propagate back: every transaction in this group gets the same category.
-            // This handles cases where a rule only matched a subset of the group's txs.
-            foreach (var tx in group.Transactions)
-                tx.CategoryId = group.CategoryId;
         }
     }
 
@@ -416,6 +568,7 @@ public class TransactionCategorizationStep : UserControl
         {
             group.CategoryId = null;
             foreach (var tx in group.Transactions) tx.CategoryId = null;
+            _db.SaveTransactionCategories(group.Transactions);
             UpdateProgress();
             return;
         }
@@ -427,22 +580,101 @@ public class TransactionCategorizationStep : UserControl
         group.CategoryId = cat.Id;
         foreach (var tx in group.Transactions) tx.CategoryId = cat.Id;
 
-        // Save the rule (type and sign are known from the group)
+        // Persist to database
+        _db.SaveTransactionCategories(group.Transactions);
+
+        // Save the rule so it is available when the user explicitly clicks
+        // "Auto-Categorize from Rules". We do NOT auto-apply it to other groups
+        // here — that would silently overwrite the user's deliberate choices.
         _db.AddAutoRule(cat.Id, group.RuleType, group.Pattern, group.DetectedSign);
 
-        // Re-run auto-categorize — the new rule may auto-fill other groups too
-        RunAutoCategAndRefresh();
+        // Refresh display only
+        RefreshGroupCategoryColumn();
     }
 
     private void OnGroupSelectionChanged(object? sender, EventArgs e)
     {
-        if (_groupsGrid.SelectedRows.Count == 0) return;
-        var group = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
-        if (group == null) return;
+        int sel = _groupsGrid.SelectedRows.Count;
 
-        _btnSplit.Enabled = group.Count > 1;
+        if (sel == 0)
+        {
+            _selectedGroup    = null;
+            _btnSplit.Enabled = false;
+            _detailGrid.Rows.Clear();
+            _lblDetailHeader.Text      = Resources.SelectGroupPrompt;
+            _lblDetailHeader.ForeColor = Color.DimGray;
+            _lblDetailHeader.Font      = new Font("Segoe UI", 9f, FontStyle.Italic);
+            return;
+        }
 
-        PopulateDetailGrid(group);
+        // When exactly one row is selected show its transactions; otherwise keep showing
+        // the last single-selection so the user can see what they're about to combine.
+        if (sel == 1)
+        {
+            var group = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
+            if (group == null) return;
+            _selectedGroup    = group;
+            _btnSplit.Enabled = group.Count > 1;
+            PopulateDetailGrid(group);
+        }
+        else
+        {
+            // Multiple rows selected — disable split, keep detail panel showing last group
+            _btnSplit.Enabled = false;
+        }
+    }
+
+    private void OnDetailCategoryChanged(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (_suppressEvents) return;
+        if (e.RowIndex < 0 || e.ColumnIndex != DColCategory) return;
+
+        var row = _detailGrid.Rows[e.RowIndex];
+        if (row.Tag is not Transaction tx) return;
+
+        var selectedName = row.Cells[DColCategory].Value as string;
+        if (string.IsNullOrEmpty(selectedName))
+        {
+            tx.CategoryId = null;
+        }
+        else
+        {
+            var cat = _categories.FirstOrDefault(c => c.Name == selectedName);
+            if (cat == null) return;
+            tx.CategoryId = cat.Id;
+        }
+
+        // Persist the individual change
+        _db.SaveTransactionCategories(new[] { tx });
+
+        // Re-derive the group's displayed category from the majority
+        if (_selectedGroup != null)
+        {
+            _selectedGroup.CategoryId = _selectedGroup.Transactions
+                .Where(t => t.CategoryId.HasValue)
+                .GroupBy(t => t.CategoryId!.Value)
+                .OrderByDescending(g => g.Count())
+                .FirstOrDefault()?.Key;
+
+            // Refresh group row in the groups grid
+            foreach (DataGridViewRow groupRow in _groupsGrid.Rows)
+            {
+                if (groupRow.Tag == _selectedGroup)
+                {
+                    _suppressEvents = true;
+                    groupRow.Cells[ColCategory].Value = _selectedGroup.CategoryId.HasValue
+                        ? _categories.FirstOrDefault(c => c.Id == _selectedGroup.CategoryId)?.Name ?? ""
+                        : "";
+                    _suppressEvents = false;
+                    break;
+                }
+            }
+
+            // Refresh override highlights in detail grid
+            PopulateDetailGrid(_selectedGroup);
+        }
+
+        UpdateProgress();
     }
 
     private void OnSplitGroup(object? sender, EventArgs e)
@@ -460,13 +692,10 @@ public class TransactionCategorizationStep : UserControl
                     .Select(t => $"\"{t}\""));
 
             MessageBox.Show(
-                $"No distinct sub-patterns were found within this group.\n\n" +
-                $"Group pattern:  \"{group.Pattern}\"\n" +
-                $"Tokens removed: {(groupTokens.Length > 0 ? groupTokens : "(none)")}\n\n" +
-                "After removing these tokens, all transactions share the same remaining\n" +
-                "keywords (or have none left). Use \"Export Group…\" to inspect the raw\n" +
-                "data and see exactly what the algorithm is working with.",
-                "Cannot Split Further",
+                string.Format(Resources.CannotSplitMsg,
+                    group.Pattern,
+                    groupTokens.Length > 0 ? groupTokens : "(none)"),
+                Resources.CannotSplitTitle,
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
@@ -488,6 +717,99 @@ public class TransactionCategorizationStep : UserControl
             _groupsGrid.Rows[idx].Selected = true;
     }
 
+    private void OnCombineGroups(object? sender, EventArgs e)
+    {
+        // Collect selected groups (preserve visual order)
+        var selectedGroups = _groupsGrid.Rows
+            .Cast<DataGridViewRow>()
+            .Where(r => r.Selected && r.Tag is TransactionGroup)
+            .Select(r => (TransactionGroup)r.Tag!)
+            .ToList();
+
+        if (selectedGroups.Count < 2) return;
+
+        // ── Determine combined pattern (intersection of each group's tokens) ──
+        var tokenSets = selectedGroups
+            .Select(g => IntelliCategorizationService.TokenizeAndClean(g.Pattern)
+                         .ToHashSet(StringComparer.OrdinalIgnoreCase))
+            .ToList();
+
+        IEnumerable<string> commonTokens = tokenSets[0];
+        for (int i = 1; i < tokenSets.Count; i++)
+            commonTokens = commonTokens.Intersect(tokenSets[i], StringComparer.OrdinalIgnoreCase);
+
+        var commonList = commonTokens.ToList();
+        // Fallback: use the pattern of the group with the most transactions
+        string newPattern = commonList.Count > 0
+            ? string.Join(" ", commonList)
+            : selectedGroups.OrderByDescending(g => g.Count).First().Pattern;
+
+        // ── Merge transactions ────────────────────────────────────────────────
+        var allTransactions = selectedGroups.SelectMany(g => g.Transactions).ToList();
+
+        // ── Determine combined category (majority vote) ───────────────────────
+        int? combinedCategoryId = allTransactions
+            .Where(t => t.CategoryId.HasValue)
+            .GroupBy(t => t.CategoryId!.Value)
+            .OrderByDescending(g => g.Count())
+            .FirstOrDefault()?.Key;
+
+        foreach (var tx in allTransactions)
+            tx.CategoryId = combinedCategoryId;
+
+        // ── Determine sign ────────────────────────────────────────────────────
+        bool hasPos = allTransactions.Any(t => t.Amount > 0);
+        bool hasNeg = allTransactions.Any(t => t.Amount < 0);
+        AmountSign sign = (hasPos && hasNeg) ? AmountSign.Any
+                        : hasPos             ? AmountSign.Positive
+                                             : AmountSign.Negative;
+
+        // ── Determine rule type ───────────────────────────────────────────────
+        RuleType ruleType = selectedGroups.All(g => g.RuleType == RuleType.IBAN)
+            ? RuleType.IBAN
+            : RuleType.Details;
+
+        var combinedGroup = new TransactionGroup
+        {
+            RuleType     = ruleType,
+            Pattern      = newPattern,
+            DisplayName  = newPattern,
+            DetectedSign = sign,
+            Transactions = allTransactions,
+            CategoryId   = combinedCategoryId
+        };
+
+        // ── Replace selected groups with the combined group ───────────────────
+        // Insert at the position of the topmost (first visible) selected group
+        int insertAt = _groups.Count;
+        foreach (var g in selectedGroups)
+        {
+            int i = _groups.IndexOf(g);
+            if (i >= 0 && i < insertAt) insertAt = i;
+        }
+        foreach (var g in selectedGroups)
+            _groups.Remove(g);
+        _groups.Insert(Math.Min(insertAt, _groups.Count), combinedGroup);
+
+        // ── Persist ───────────────────────────────────────────────────────────
+        _db.SaveTransactionCategories(allTransactions);
+
+        _selectedGroup = combinedGroup;
+        PopulateGroupsGrid();
+        UpdateProgress();
+
+        // Select and scroll to the new combined row
+        foreach (DataGridViewRow row in _groupsGrid.Rows)
+        {
+            if (row.Tag == combinedGroup)
+            {
+                row.Selected = true;
+                _groupsGrid.FirstDisplayedScrollingRowIndex = row.Index;
+                break;
+            }
+        }
+    }
+
     private static decimal ParseDecimal(object? value) =>
         decimal.TryParse(value?.ToString(),
             System.Globalization.NumberStyles.Any,
@@ -504,6 +826,7 @@ public class TransactionCategorizationStep : UserControl
         var rules = _db.GetRules();
         _categorizationService.AutoCategorize(_transactions, rules);
         MapCategoriesToGroups();
+        _db.SaveTransactionCategories(_transactions);
         RefreshGroupCategoryColumn();
     }
 
@@ -527,6 +850,16 @@ public class TransactionCategorizationStep : UserControl
                 catCol.Items.Add(cat.Name);
         }
 
+        if (_detailGrid.Columns.Count > DColCategory &&
+            _detailGrid.Columns[DColCategory] is DataGridViewComboBoxColumn detailCatCol)
+        {
+            detailCatCol.Items.Clear();
+            detailCatCol.Items.Add("");
+            foreach (var cat in _categories)
+                detailCatCol.Items.Add(cat.Name);
+        }
+
         RefreshGroupCategoryColumn();
+        if (_selectedGroup != null) PopulateDetailGrid(_selectedGroup);
     }
 }

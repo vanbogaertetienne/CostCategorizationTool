@@ -24,7 +24,7 @@ public class SummaryStep : UserControl
 
         var titleLabel = new Label
         {
-            Text     = "Categorization Summary",
+            Text     = Resources.SumTitle,
             Font     = new Font("Segoe UI", 13f, FontStyle.Bold),
             AutoSize = true,
             Location = new Point(16, 16)
@@ -40,9 +40,9 @@ public class SummaryStep : UserControl
             Anchor        = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
             BorderStyle   = BorderStyle.Fixed3D
         };
-        _summaryList.Columns.Add("Category",               200);
-        _summaryList.Columns.Add("# Transactions",         130);
-        _summaryList.Columns.Add("Total Amount (€)",       150);
+        _summaryList.Columns.Add(Resources.SumColCategory,  200);
+        _summaryList.Columns.Add(Resources.SumColCount,     130);
+        _summaryList.Columns.Add(Resources.SumColTotal,     150);
 
         _lblTotal = new Label
         {
@@ -53,17 +53,20 @@ public class SummaryStep : UserControl
             Anchor    = AnchorStyles.Bottom | AnchorStyles.Left
         };
 
+        var btnFont = new Font("Segoe UI", 10f);
         _btnExport = new Button
         {
-            Text   = "Export to CSV",
-            Size   = new Size(130, 32),
+            Text   = Resources.BtnExportCsv,
+            Size   = new Size(TextRenderer.MeasureText(Resources.BtnExportCsv, btnFont).Width + 24, 32),
+            Font   = btnFont,
             Anchor = AnchorStyles.Bottom | AnchorStyles.Right
         };
 
         _btnExportExcel = new Button
         {
-            Text      = "Export to Excel…",
-            Size      = new Size(140, 32),
+            Text      = Resources.BtnExportExcel,
+            Size      = new Size(TextRenderer.MeasureText(Resources.BtnExportExcel, btnFont).Width + 24, 32),
+            Font      = btnFont,
             Anchor    = AnchorStyles.Bottom | AnchorStyles.Right,
             BackColor = Color.FromArgb(33, 115, 70),
             ForeColor = Color.White,
@@ -150,7 +153,7 @@ public class SummaryStep : UserControl
         var uncategorized = expenses.Where(t => !t.CategoryId.HasValue).ToList();
         if (uncategorized.Count > 0)
         {
-            var item = new ListViewItem("Uncategorized") { ForeColor = Color.DarkRed };
+            var item = new ListViewItem(Resources.SumUncategorized) { ForeColor = Color.DarkRed };
             item.SubItems.Add(uncategorized.Count.ToString());
             item.SubItems.Add(uncategorized.Sum(t => t.Amount).ToString("N2", CultureInfo.CurrentCulture));
             _summaryList.Items.Add(item);
@@ -159,7 +162,7 @@ public class SummaryStep : UserControl
         // Income row
         if (income.Count > 0)
         {
-            var item = new ListViewItem("INCOME") { ForeColor = Color.DarkGreen };
+            var item = new ListViewItem(Resources.SumIncome) { ForeColor = Color.DarkGreen };
             item.SubItems.Add(income.Count.ToString());
             item.SubItems.Add(income.Sum(t => t.Amount).ToString("N2", CultureInfo.CurrentCulture));
             _summaryList.Items.Add(item);
@@ -167,7 +170,7 @@ public class SummaryStep : UserControl
 
         // Grand total row for expenses
         decimal grandTotal = expenses.Sum(t => t.Amount);
-        var totalItem = new ListViewItem("TOTAL EXPENSES")
+        var totalItem = new ListViewItem(Resources.SumTotalExp)
         {
             Font      = new Font("Segoe UI", 10f, FontStyle.Bold),
             ForeColor = Color.DarkBlue
@@ -176,7 +179,8 @@ public class SummaryStep : UserControl
         totalItem.SubItems.Add(grandTotal.ToString("N2", CultureInfo.CurrentCulture));
         _summaryList.Items.Add(totalItem);
 
-        _lblTotal.Text = $"Grand total expenses: {grandTotal:N2} {(transactions.FirstOrDefault()?.Currency ?? "EUR")}";
+        _lblTotal.Text = string.Format(Resources.SumGrandTotal, grandTotal,
+            transactions.FirstOrDefault()?.Currency ?? "EUR");
 
         LayoutControls();
     }
@@ -185,8 +189,8 @@ public class SummaryStep : UserControl
     {
         using var dlg = new SaveFileDialog
         {
-            Title      = "Export to Excel",
-            Filter     = "Excel workbook (*.xlsx)|*.xlsx|All files|*.*",
+            Title      = Resources.ExportExcelTitle,
+            Filter     = Resources.ExportExcelFilter,
             FileName   = $"CostCategorization_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
             DefaultExt = "xlsx"
         };
@@ -196,12 +200,12 @@ public class SummaryStep : UserControl
         {
             var svc = new ExcelExportService();
             svc.Export(dlg.FileName, _transactions, _categories, _groups);
-            MessageBox.Show($"Exported successfully to:\n{dlg.FileName}", "Export Complete",
+            MessageBox.Show(string.Format(Resources.ExportCompleteMsg, dlg.FileName), Resources.ExportComplete,
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Export failed:\n{ex.Message}", "Export Error",
+            MessageBox.Show(string.Format(Resources.ExportFailed, ex.Message), Resources.ExportError,
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
@@ -210,8 +214,8 @@ public class SummaryStep : UserControl
     {
         using var dlg = new SaveFileDialog
         {
-            Title            = "Export Summary",
-            Filter           = "CSV files|*.csv|All files|*.*",
+            Title            = Resources.ExportTitle,
+            Filter           = Resources.ExportFilter,
             FileName         = $"CostSummary_{DateTime.Now:yyyyMMdd_HHmm}.csv",
             DefaultExt       = "csv"
         };
@@ -236,7 +240,7 @@ public class SummaryStep : UserControl
             {
                 var catName = tx.CategoryId.HasValue
                     ? _categories.FirstOrDefault(c => c.Id == tx.CategoryId)?.Name ?? "Unknown"
-                    : "Uncategorized";
+                    : Resources.SumUncategorized;
                 sb.AppendLine(
                     $"{tx.ExecutionDate:dd/MM/yyyy};" +
                     $"{tx.Amount.ToString("N2", CultureInfo.CurrentCulture)};" +
@@ -250,12 +254,12 @@ public class SummaryStep : UserControl
             }
 
             File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
-            MessageBox.Show($"Exported successfully to:\n{dlg.FileName}", "Export Complete",
+            MessageBox.Show(string.Format(Resources.ExportCompleteMsg, dlg.FileName), Resources.ExportComplete,
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Export failed:\n{ex.Message}", "Export Error",
+            MessageBox.Show(string.Format(Resources.ExportFailed, ex.Message), Resources.ExportError,
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
