@@ -174,21 +174,27 @@ public class CategoryManagementStep : UserControl
     private void LayoutControls()
     {
         int Sc(int v) => (int)(v * (float)DeviceDpi / 96f);
-        int gap = Sc(16);
-        int h   = ClientSize.Height - Sc(68);
-        h = Math.Max(h, 200);
+        int gap  = Sc(16);
+        int h    = Math.Max(ClientSize.Height - Sc(68), 200);
+        int topH = Sc(28);   // height reserved for the section label above each list
+        int btnH = Sc(32);   // button height
+        int btnGap = Sc(6);  // gap between list bottom and buttons
 
-        // Left panel
+        // Button Y is anchored to the bottom of the panel
+        int lby = h - btnH - btnGap;
+
         var leftPanel  = Controls.OfType<Panel>().ElementAtOrDefault(0);
         var rightPanel = Controls.OfType<Panel>().ElementAtOrDefault(1);
 
         if (leftPanel != null)
         {
             int lpw = Math.Max(_btnAdd.Width + _btnRename.Width + _btnDelete.Width + Sc(12), Sc(210));
-            leftPanel.Location = new Point(gap, Sc(52));
-            leftPanel.Size     = new Size(lpw, h);
-            _categoryList.Size = new Size(lpw, h - Sc(56));
-            int lbx = 0, lby = h - Sc(48);
+            leftPanel.Location     = new Point(gap, Sc(52));
+            leftPanel.Size         = new Size(lpw, h);
+            // List fills the space between the label and the buttons
+            _categoryList.Location = new Point(0, topH);
+            _categoryList.Size     = new Size(lpw, Math.Max(40, lby - topH - btnGap));
+            int lbx = 0;
             _btnAdd.Location    = new Point(lbx, lby); lbx += _btnAdd.Width + Sc(4);
             _btnRename.Location = new Point(lbx, lby); lbx += _btnRename.Width + Sc(4);
             _btnDelete.Location = new Point(lbx, lby);
@@ -196,19 +202,19 @@ public class CategoryManagementStep : UserControl
 
         if (rightPanel != null)
         {
-            int lpw  = leftPanel?.Width ?? Sc(210);
-            int rpx  = gap + lpw + gap;
-            int rw   = ClientSize.Width - rpx - gap;
-            rightPanel.Location = new Point(rpx, Sc(52));
-            rightPanel.Size     = new Size(Math.Max(rw, 200), h);
-            _rulesList.Size     = new Size(Math.Max(rw, 200), h - Sc(56));
+            int lpw = leftPanel?.Width ?? Sc(210);
+            int rpx = gap + lpw + gap;
+            int rw  = Math.Max(ClientSize.Width - rpx - gap, 200);
+            rightPanel.Location  = new Point(rpx, Sc(52));
+            rightPanel.Size      = new Size(rw, h);
+            _rulesList.Location  = new Point(0, topH);
+            _rulesList.Size      = new Size(rw, Math.Max(40, lby - topH - btnGap));
             _rulesList.Columns[1].Width = Math.Max(100, rw - 80 - 100 - 4);
-            int rbx2 = 0, rby = h - Sc(48);
-            _btnAddRule.Location    = new Point(rbx2, rby); rbx2 += _btnAddRule.Width + Sc(4);
-            _btnDeleteRule.Location = new Point(rbx2, rby);
+            int rbx = 0;
+            _btnAddRule.Location    = new Point(rbx, lby); rbx += _btnAddRule.Width + Sc(4);
+            _btnDeleteRule.Location = new Point(rbx, lby);
         }
 
-        // Description label width
         var descLabel = Controls.OfType<Label>().FirstOrDefault();
         if (descLabel != null)
             descLabel.Width = ClientSize.Width - 2 * gap;
