@@ -434,7 +434,7 @@ public class TransactionCategorizationStep : UserControl
         totalCol.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         _groupsGrid.Columns.Add(totalCol);
 
-        var catCol = new DataGridViewComboBoxColumn
+        var catCol = new FlatComboBoxColumn
         {
             Name = "Category", HeaderText = Resources.GColCategory, Width = 170, FlatStyle = FlatStyle.Flat
         };
@@ -466,7 +466,7 @@ public class TransactionCategorizationStep : UserControl
         descCol.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         _detailGrid.Columns.Add(descCol);
 
-        var detailCatCol = new DataGridViewComboBoxColumn
+        var detailCatCol = new FlatComboBoxColumn
         {
             Name       = "Category",
             HeaderText = Resources.DColCategory,
@@ -1474,4 +1474,62 @@ public class SplitGroupDialog : Form
         CancelButton = btnCancel;
         ResumeLayout(false);
     }
+}
+
+// ── Flat combo cell — looks like text, shows dropdown only when editing ────────
+
+/// <summary>
+/// DataGridViewComboBoxCell that paints as plain text with a subtle chevron.
+/// The full combo editor appears only when the cell enters edit mode.
+/// </summary>
+internal class FlatComboBoxCell : DataGridViewComboBoxCell
+{
+    protected override void Paint(
+        Graphics graphics, Rectangle clipBounds, Rectangle cellBounds,
+        int rowIndex, DataGridViewElementStates elementState,
+        object? value, object? formattedValue, string? errorText,
+        DataGridViewCellStyle cellStyle,
+        DataGridViewAdvancedBorderStyle advancedBorderStyle,
+        DataGridViewPaintParts paintParts)
+    {
+        // Let the base class draw background, selection, and border —
+        // but suppress its own content (the chunky combo chrome).
+        base.Paint(graphics, clipBounds, cellBounds, rowIndex, elementState,
+                   value, formattedValue, errorText, cellStyle, advancedBorderStyle,
+                   paintParts & ~DataGridViewPaintParts.ContentForeground);
+
+        bool selected = (elementState & DataGridViewElementStates.Selected) != 0;
+        Color fg = selected ? cellStyle.SelectionForeColor : cellStyle.ForeColor;
+
+        // Small chevron on the right
+        const int arrowAreaW = 18;
+        int ax = cellBounds.Right - arrowAreaW;
+        int ay = cellBounds.Y + cellBounds.Height / 2;
+        Color arrowColor = Color.FromArgb(selected ? 200 : 140, fg);
+        using (var brush = new SolidBrush(arrowColor))
+        {
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            graphics.FillPolygon(brush, new[]
+            {
+                new Point(ax,      ay - 3),
+                new Point(ax + 9,  ay - 3),
+                new Point(ax + 4,  ay + 3)
+            });
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+        }
+
+        // Value text
+        string text = formattedValue?.ToString() ?? "";
+        var textRect = new Rectangle(
+            cellBounds.X + 3, cellBounds.Y,
+            cellBounds.Width - arrowAreaW - 4, cellBounds.Height);
+        TextRenderer.DrawText(graphics, text, cellStyle.Font, textRect, fg,
+            TextFormatFlags.VerticalCenter | TextFormatFlags.Left |
+            TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
+    }
+}
+
+internal class FlatComboBoxColumn : DataGridViewComboBoxColumn
+{
+    public FlatComboBoxColumn() { CellTemplate = new FlatComboBoxCell(); }
 }
