@@ -332,8 +332,17 @@ public class TransactionCategorizationStep : UserControl
         _detailGrid.RowTemplate.Height  = (int)(40 * sc);
         _detailGrid.ColumnHeadersHeight = (int)(36 * sc);
 
+        // Defer SplitterDistance until after layout so the container has its final Height.
         if (Controls.OfType<SplitContainer>().FirstOrDefault() is { } split)
-            split.SplitterDistance = (int)(340 * sc);
+        {
+            int desired = (int)(340 * sc);
+            BeginInvoke(() =>
+            {
+                int max = split.Height - split.Panel2MinSize - split.SplitterWidth;
+                if (max > split.Panel1MinSize)
+                    split.SplitterDistance = Math.Clamp(desired, split.Panel1MinSize, max);
+            });
+        }
     }
 
     // ── Public API ───────────────────────────────────────────────────────────
