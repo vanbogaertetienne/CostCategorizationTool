@@ -497,9 +497,12 @@ public class TransactionCategorizationStep : UserControl
 
             baseGroups = _grouperService.Group(filteredTxs);
 
-            // Re-apply categories to filtered groups by matching Pattern + RuleType
-            var categoryLookup = _groups.Where(g => g.CategoryId.HasValue)
-                .ToDictionary(g => (g.Pattern, g.RuleType), g => g.CategoryId);
+            // Re-apply categories to filtered groups by matching Pattern + RuleType.
+            // Use assignment-loop instead of ToDictionary to silently handle duplicate keys
+            // (same pattern can appear with different DetectedSign in _groups).
+            var categoryLookup = new Dictionary<(string, RuleType), int?>();
+            foreach (var g in _groups.Where(g => g.CategoryId.HasValue))
+                categoryLookup[(g.Pattern, g.RuleType)] = g.CategoryId;
             foreach (var g in baseGroups)
             {
                 if (categoryLookup.TryGetValue((g.Pattern, g.RuleType), out var catId))
