@@ -27,8 +27,10 @@ public class TransactionCategorizationStep : UserControl
     private DateTime? _dateTo;
     private string _dateFilterLabel = "";   // set after applying filter
 
-    // Column filters (column index → contains string)
-    private readonly Dictionary<int, string> _colFilters = new();
+    // Column filters (column index → filter string)
+    private readonly Dictionary<int, string> _colFilters      = new();
+    // Which column filters are exact-match (picked from list) vs. contains (custom input)
+    private readonly HashSet<int>            _colFilterExact  = new();
 
     // Groups grid column indices
     private const int ColCount     = 0;
@@ -533,8 +535,10 @@ public class TransactionCategorizationStep : UserControl
                 foreach (var kv in _colFilters)
                 {
                     string cellText = GetGroupColumnText(g, kv.Key);
-                    if (!cellText.Contains(kv.Value, StringComparison.OrdinalIgnoreCase))
-                        return false;
+                    bool match = _colFilterExact.Contains(kv.Key)
+                        ? cellText.Equals(kv.Value, StringComparison.OrdinalIgnoreCase)
+                        : cellText.Contains(kv.Value, StringComparison.OrdinalIgnoreCase);
+                    if (!match) return false;
                 }
                 return true;
             });
@@ -839,58 +843,99 @@ public class TransactionCategorizationStep : UserControl
         if (e.ColumnIndex < 0) return;
 
         int colIdx = e.ColumnIndex;
-        bool isTextCol = TextColumns.Contains(colIdx);
+        if (!TextColumns.Contains(colIdx)) return;
+
         string colHeader = _groupsGrid.Columns[colIdx].HeaderText.TrimStart('▼', ' ');
+        bool hasFilter   = _colFilters.ContainsKey(colIdx);
+
+        // Collect distinct values with frequency counts from ALL groups
+        var valueCounts = _groups
+            .Select(g => GetGroupColumnText(g, colIdx))
+            .GroupBy(v => v, StringComparer.OrdinalIgnoreCase)
+            .Select(g => (Value: g.Key, Count: g.Count()))
+            .OrderByDescending(x => x.Count)
+            .ToList();
 
         var menu = new ContextMenuStrip();
+        menu.Font = _groupsGrid.Font;
 
-        if (isTextCol)
+        const int threshold = 10;
+
+        if (valueCounts.Count >= threshold)
         {
-            var miFilter = new ToolStripMenuItem(Resources.ColFilterMenuItem);
-            miFilter.Click += (_, _) => ShowColumnFilter(colIdx, colHeader);
-            menu.Items.Add(miFilter);
-
-            var miClear = new ToolStripMenuItem(Resources.ColFilterClear);
-            miClear.Enabled = _colFilters.ContainsKey(colIdx);
-            miClear.Click += (_, _) => ClearColumnFilter(colIdx);
-            menu.Items.Add(miClear);
-
+            // Custom "contains" filter at the top
+            var miCustom = new ToolStripMenuItem(Resources.ColFilterMenuItem);
+            miCustom.Click += (_, _) => ShowColumnFilterCustom(colIdx, colHeader);
+            menu.Items.Add(miCustom);
             menu.Items.Add(new ToolStripSeparator());
         }
+
+        // Value list: all if < threshold, top 10 otherwise
+        var valuesToShow = valueCounts.Count < threshold
+            ? valueCounts
+            : valueCounts.Take(threshold).ToList();
+
+        string? activeFilter = hasFilter ? _colFilters[colIdx] : null;
+
+        foreach (var (val, cnt) in valuesToShow)
+        {
+            string label = string.IsNullOrEmpty(val)
+                ? $"(empty)  [{cnt}]"
+                : $"{val}  [{cnt}]";
+            var mi = new ToolStripMenuItem(label);
+            // Checkmark if this value is the active filter
+            mi.Checked = hasFilter
+                && _colFilterExact.Contains(colIdx)
+                && string.Equals(activeFilter, val, StringComparison.OrdinalIgnoreCase);
+            string captured = val;
+            mi.Click += (_, _) => ApplyColumnFilter(colIdx, captured, exact: true);
+            menu.Items.Add(mi);
+        }
+
+        menu.Items.Add(new ToolStripSeparator());
+
+        var miClear = new ToolStripMenuItem(Resources.ColFilterClear);
+        miClear.Enabled = hasFilter;
+        miClear.Click += (_, _) => ClearColumnFilter(colIdx);
+        menu.Items.Add(miClear);
 
         var miClearAll = new ToolStripMenuItem(Resources.ColFilterClearAll);
         miClearAll.Enabled = _colFilters.Count > 0;
         miClearAll.Click += (_, _) => ClearAllColumnFilters();
         menu.Items.Add(miClearAll);
 
-        // Show near column header
         var headerRect = _groupsGrid.GetColumnDisplayRectangle(colIdx, true);
         menu.Show(_groupsGrid, new Point(headerRect.Left, _groupsGrid.ColumnHeadersHeight));
     }
 
-    private void ShowColumnFilter(int colIdx, string colHeader)
+    private void ShowColumnFilterCustom(int colIdx, string colHeader)
     {
-        string prompt = string.Format(Resources.ColFilterPrompt, colHeader);
-        string current = _colFilters.TryGetValue(colIdx, out var existing) ? existing : "";
+        string prompt  = string.Format(Resources.ColFilterPrompt, colHeader);
+        string current = (_colFilters.TryGetValue(colIdx, out var existing) &&
+                          !_colFilterExact.Contains(colIdx)) ? existing : "";
 
         string? result = ShowInputDialog(Resources.ColFilterTitle, prompt, current);
-        if (result == null) return;   // cancelled
+        if (result == null) return;
 
         if (string.IsNullOrWhiteSpace(result))
-        {
             ClearColumnFilter(colIdx);
-        }
         else
-        {
-            _colFilters[colIdx] = result.Trim();
-            UpdateColumnFilterIndicator(colIdx, true);
-            PopulateGroupsGrid();
-        }
+            ApplyColumnFilter(colIdx, result.Trim(), exact: false);
+    }
+
+    private void ApplyColumnFilter(int colIdx, string value, bool exact)
+    {
+        _colFilters[colIdx] = value;
+        if (exact) _colFilterExact.Add(colIdx);
+        else       _colFilterExact.Remove(colIdx);
+        UpdateColumnFilterIndicator(colIdx, true);
+        PopulateGroupsGrid();
     }
 
     private void ClearColumnFilter(int colIdx)
     {
         _colFilters.Remove(colIdx);
+        _colFilterExact.Remove(colIdx);
         UpdateColumnFilterIndicator(colIdx, false);
         PopulateGroupsGrid();
     }
@@ -899,6 +944,7 @@ public class TransactionCategorizationStep : UserControl
     {
         var keys = _colFilters.Keys.ToList();
         _colFilters.Clear();
+        _colFilterExact.Clear();
         foreach (int k in keys)
             UpdateColumnFilterIndicator(k, false);
         PopulateGroupsGrid();
