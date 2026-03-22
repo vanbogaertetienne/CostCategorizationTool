@@ -697,13 +697,20 @@ public class TransactionCategorizationStep : UserControl
         foreach (DataGridViewColumn col in grid.Columns)
         {
             if (col.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill) continue;
-            grid.AutoResizeColumn(col.Index, DataGridViewAutoSizeColumnMode.AllCells);
+
             if (col is DataGridViewComboBoxColumn combo && combo.Items.Count > 0)
             {
+                // Never call AutoResizeColumn on a ComboBox column: it instantiates a
+                // hidden ComboBox editing control for every row to measure content,
+                // which leaks USER handles and eventually causes Win32 error 1400.
+                // Size by the widest item text instead.
                 int itemW = combo.Items.Cast<object>()
                     .Max(item => TextRenderer.MeasureText(item?.ToString() ?? "", grid.Font).Width);
-                int needed = itemW + 36;
-                if (col.Width < needed) col.Width = needed;
+                col.Width = Math.Max(col.Width, itemW + 36);
+            }
+            else
+            {
+                grid.AutoResizeColumn(col.Index, DataGridViewAutoSizeColumnMode.AllCells);
             }
         }
     }
