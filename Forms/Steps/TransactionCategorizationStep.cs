@@ -318,12 +318,26 @@ public class TransactionCategorizationStep : UserControl
             Dock             = DockStyle.Fill,
             Orientation      = Orientation.Horizontal,
             SplitterDistance = 340,
-            SplitterWidth    = 8,
+            SplitterWidth    = 10,
             Panel1MinSize    = 120,
-            Panel2MinSize    = 120
+            Panel2MinSize    = 120,
+            BackColor        = Color.FromArgb(198, 210, 230)   // blue-gray band
         };
+        split.Panel1.BackColor = Color.White;
+        split.Panel2.BackColor = Color.White;
         split.Panel1.Controls.Add(_groupsGrid);
         split.Panel2.Controls.Add(detailPanel);
+
+        // Draw a grip (row of small dots) centred on the splitter band
+        split.Paint += (_, e) =>
+        {
+            var r  = split.SplitterRectangle;
+            int cy = r.Y + r.Height / 2;
+            int cx = r.X + r.Width  / 2;
+            using var brush = new SolidBrush(Color.FromArgb(110, 130, 160));
+            for (int i = -18; i <= 18; i += 6)
+                e.Graphics.FillEllipse(brush, cx + i - 2, cy - 2, 4, 4);
+        };
 
         _btnAutoCateg.Click  += OnAutoCateg;
         _btnManageCats.Click += OnManageCategories;
