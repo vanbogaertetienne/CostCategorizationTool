@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using CostCategorizationTool.Forms;
 using CostCategorizationTool.Models;
 
@@ -9,6 +10,7 @@ static class Program
     [STAThread]
     static void Main()
     {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         ApplicationConfiguration.Initialize();
         var settings = AppSettings.Load();
 
