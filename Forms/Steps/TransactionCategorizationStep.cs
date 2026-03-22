@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CostCategorizationTool.Data;
 using CostCategorizationTool.Models;
 using CostCategorizationTool.Services;
@@ -510,12 +511,15 @@ public class TransactionCategorizationStep : UserControl
         // Make Pattern column fill remaining space
         _groupsGrid.Columns[ColPattern].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
-        // Assign funnel header cells to filterable columns
+        // Assign funnel header cells + programmatic sort to filterable columns
         foreach (DataGridViewColumn col in _groupsGrid.Columns)
         {
             int idx = col.Index;
             if (TextColumns.Contains(idx))
+            {
                 col.HeaderCell = new FilterableHeaderCell(() => _colFilters.ContainsKey(idx));
+                col.SortMode   = DataGridViewColumnSortMode.Programmatic;
+            }
         }
 
         // Detail grid columns
@@ -921,11 +925,36 @@ public class TransactionCategorizationStep : UserControl
         int colIdx = e.ColumnIndex;
         if (!TextColumns.Contains(colIdx)) return;
 
-        // Only open the filter when the click lands in the funnel icon area (right 20px)
+        // e.X is cell-relative (0 = left edge of the column header cell).
+        // Funnel occupies the rightmost 20px; anything to the left triggers sort.
         int colWidth = _groupsGrid.Columns[colIdx].Width;
-        if (e.X < colWidth - 20) return;
+        bool clickedFunnel = e.X >= colWidth - 20;
 
-        string colHeader = _groupsGrid.Columns[colIdx].HeaderText.TrimStart('▼', ' ');
+        if (!clickedFunnel)
+        {
+            // Sort: toggle direction on the clicked column (SortMode = Programmatic)
+            var col    = _groupsGrid.Columns[colIdx];
+            var fhCell = col.HeaderCell as FilterableHeaderCell;
+            var newDir = fhCell?.CustomSortOrder == SortOrder.Ascending
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
+
+            // Clear CustomSortOrder from all filterable columns
+            foreach (DataGridViewColumn c in _groupsGrid.Columns)
+                if (c.HeaderCell is FilterableHeaderCell fh) fh.CustomSortOrder = SortOrder.None;
+
+            _groupsGrid.Sort(col, newDir);
+
+            if (fhCell != null)
+                fhCell.CustomSortOrder = newDir == ListSortDirection.Ascending
+                    ? SortOrder.Ascending : SortOrder.Descending;
+
+            _groupsGrid.InvalidateCell(col.HeaderCell);
+            return;
+        }
+
+        // ── Show filter menu ─────────────────────────────────────────────────
+        string colHeader = _groupsGrid.Columns[colIdx].HeaderText;
         bool hasFilter   = _colFilters.ContainsKey(colIdx);
 
         // Collect distinct values with frequency counts from ALL groups
@@ -943,14 +972,12 @@ public class TransactionCategorizationStep : UserControl
 
         if (valueCounts.Count >= threshold)
         {
-            // Custom "contains" filter at the top
             var miCustom = new ToolStripMenuItem(Resources.ColFilterMenuItem);
             miCustom.Click += (_, _) => ShowColumnFilterCustom(colIdx, colHeader);
             menu.Items.Add(miCustom);
             menu.Items.Add(new ToolStripSeparator());
         }
 
-        // Value list: all if < threshold, top 10 otherwise
         var valuesToShow = valueCounts.Count < threshold
             ? valueCounts
             : valueCounts.Take(threshold).ToList();
@@ -963,7 +990,6 @@ public class TransactionCategorizationStep : UserControl
                 ? $"(empty)  [{cnt}]"
                 : $"{val}  [{cnt}]";
             var mi = new ToolStripMenuItem(label);
-            // Checkmark if this value is the active filter
             mi.Checked = hasFilter
                 && _colFilterExact.Contains(colIdx)
                 && string.Equals(activeFilter, val, StringComparison.OrdinalIgnoreCase);
@@ -984,8 +1010,11 @@ public class TransactionCategorizationStep : UserControl
         miClearAll.Click += (_, _) => ClearAllColumnFilters();
         menu.Items.Add(miClearAll);
 
+        // Defer show by one message-pump cycle so the left-click mouse-up event
+        // does not immediately dismiss the just-opened menu.
         var headerRect = _groupsGrid.GetColumnDisplayRectangle(colIdx, true);
-        menu.Show(_groupsGrid, new Point(headerRect.Left, _groupsGrid.ColumnHeadersHeight));
+        var showPt     = new Point(headerRect.Left, _groupsGrid.ColumnHeadersHeight);
+        BeginInvoke(() => menu.Show(_groupsGrid, showPt));
     }
 
     private void ShowColumnFilterCustom(int colIdx, string colHeader)
@@ -1682,6 +1711,10 @@ internal class FilterableHeaderCell : DataGridViewColumnHeaderCell
 {
     private readonly Func<bool> _hasFilter;
 
+    /// <summary>Sort state managed by OnColumnHeaderMouseClick (not SortGlyphDirection,
+    /// which is kept None so the base class never draws its own sort triangle).</summary>
+    public SortOrder CustomSortOrder { get; set; } = SortOrder.None;
+
     public FilterableHeaderCell(Func<bool> hasFilter) => _hasFilter = hasFilter;
 
     protected override void Paint(
@@ -1692,17 +1725,33 @@ internal class FilterableHeaderCell : DataGridViewColumnHeaderCell
         DataGridViewAdvancedBorderStyle advancedBorderStyle,
         DataGridViewPaintParts paintParts)
     {
-        // Let base draw background, border, sort glyph, and text normally
+        // SortGlyphDirection is intentionally left as None so the base class never
+        // draws the built-in sort triangle. We draw our own arrow below.
         base.Paint(graphics, clipBounds, cellBounds, rowIndex, elementState,
                    value, formattedValue, errorText, cellStyle,
                    advancedBorderStyle, paintParts);
 
-        // Draw funnel icon in the right margin, shifted left when sort glyph is also visible
+        // Funnel is always the rightmost icon
         bool active = _hasFilter();
         const int w = 11, h = 12, margin = 5;
-        int sortOffset = SortGlyphDirection != SortOrder.None ? 16 : 0;
-        int fx = cellBounds.Right - w - margin - sortOffset;
+        int fx = cellBounds.Right - w - margin;
         int fy = cellBounds.Y + (cellBounds.Height - h) / 2;
+
+        // Draw our own sort arrow to the left of the funnel
+        if (CustomSortOrder != SortOrder.None)
+        {
+            const int aw = 9, ah = 5;
+            int ax = fx - aw - 4;
+            int ay = cellBounds.Y + (cellBounds.Height - ah) / 2;
+            bool asc = CustomSortOrder == SortOrder.Ascending;
+            Point[] arrow = asc
+                ? new[] { new Point(ax, ay + ah), new Point(ax + aw / 2, ay),      new Point(ax + aw, ay + ah) }
+                : new[] { new Point(ax, ay),       new Point(ax + aw / 2, ay + ah), new Point(ax + aw, ay) };
+
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using var arrowBrush = new SolidBrush(Color.FromArgb(90, 100, 120));
+            graphics.FillPolygon(arrowBrush, arrow);
+        }
 
         graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
