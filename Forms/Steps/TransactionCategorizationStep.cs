@@ -510,6 +510,14 @@ public class TransactionCategorizationStep : UserControl
         // Make Pattern column fill remaining space
         _groupsGrid.Columns[ColPattern].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
+        // Assign funnel header cells to filterable columns
+        foreach (DataGridViewColumn col in _groupsGrid.Columns)
+        {
+            int idx = col.Index;
+            if (TextColumns.Contains(idx))
+                col.HeaderCell = new FilterableHeaderCell(() => _colFilters.ContainsKey(idx));
+        }
+
         // Detail grid columns
         _detailGrid.Columns.Clear();
 
@@ -907,11 +915,15 @@ public class TransactionCategorizationStep : UserControl
 
     private void OnColumnHeaderMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
     {
-        if (e.Button != MouseButtons.Right) return;
+        if (e.Button != MouseButtons.Left) return;
         if (e.ColumnIndex < 0) return;
 
         int colIdx = e.ColumnIndex;
         if (!TextColumns.Contains(colIdx)) return;
+
+        // Only open the filter when the click lands in the funnel icon area (right 20px)
+        int colWidth = _groupsGrid.Columns[colIdx].Width;
+        if (e.X < colWidth - 20) return;
 
         string colHeader = _groupsGrid.Columns[colIdx].HeaderText.TrimStart('▼', ' ');
         bool hasFilter   = _colFilters.ContainsKey(colIdx);
@@ -1020,10 +1032,10 @@ public class TransactionCategorizationStep : UserControl
 
     private void UpdateColumnFilterIndicator(int colIdx, bool active)
     {
-        if (colIdx < 0 || colIdx >= _groupsGrid.Columns.Count) return;
-        var col = _groupsGrid.Columns[colIdx];
-        string baseText = col.HeaderText.TrimStart('▼', ' ');
-        col.HeaderText = active ? $"▼ {baseText}" : baseText;
+        // The funnel icon in FilterableHeaderCell changes colour automatically based on
+        // _colFilters — just invalidate the header cell so it repaints immediately.
+        if (colIdx >= 0 && colIdx < _groupsGrid.Columns.Count)
+            _groupsGrid.InvalidateCell(_groupsGrid.Columns[colIdx].HeaderCell);
     }
 
     // ── Category mapping ─────────────────────────────────────────────────────
@@ -1657,4 +1669,65 @@ internal class FlatComboBoxCell : DataGridViewComboBoxCell
 internal class FlatComboBoxColumn : DataGridViewComboBoxColumn
 {
     public FlatComboBoxColumn() { CellTemplate = new FlatComboBoxCell(); }
+}
+
+// ── Filterable column header cell ─────────────────────────────────────────────
+
+/// <summary>
+/// Column header cell that draws a small funnel icon on the right side.
+/// The funnel is filled blue when a filter is active, gray otherwise.
+/// The <paramref name="hasFilter"/> delegate is queried on every paint.
+/// </summary>
+internal class FilterableHeaderCell : DataGridViewColumnHeaderCell
+{
+    private readonly Func<bool> _hasFilter;
+
+    public FilterableHeaderCell(Func<bool> hasFilter) => _hasFilter = hasFilter;
+
+    protected override void Paint(
+        Graphics graphics, Rectangle clipBounds, Rectangle cellBounds,
+        int rowIndex, DataGridViewElementStates elementState,
+        object? value, object? formattedValue, string? errorText,
+        DataGridViewCellStyle cellStyle,
+        DataGridViewAdvancedBorderStyle advancedBorderStyle,
+        DataGridViewPaintParts paintParts)
+    {
+        // Let base draw background, border, sort glyph, and text normally
+        base.Paint(graphics, clipBounds, cellBounds, rowIndex, elementState,
+                   value, formattedValue, errorText, cellStyle,
+                   advancedBorderStyle, paintParts);
+
+        // Draw funnel icon in the right margin
+        bool active = _hasFilter();
+        const int w = 11, h = 12, margin = 5;
+        int fx = cellBounds.Right - w - margin;
+        int fy = cellBounds.Y + (cellBounds.Height - h) / 2;
+
+        graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+        // Funnel shape: wide top trapezoid + narrow stem
+        Point[] shape =
+        {
+            new(fx,         fy),          // top-left
+            new(fx + w,     fy),          // top-right
+            new(fx + w - 2, fy + 4),      // shoulder-right
+            new(fx + 7,     fy + 4),      // waist-right
+            new(fx + 7,     fy + h),      // stem bottom-right
+            new(fx + 4,     fy + h),      // stem bottom-left
+            new(fx + 4,     fy + 4),      // waist-left
+            new(fx + 2,     fy + 4),      // shoulder-left
+        };
+
+        using var fill = new SolidBrush(active
+            ? Color.FromArgb(40, 110, 210)
+            : Color.FromArgb(185, 190, 200));
+        graphics.FillPolygon(fill, shape);
+
+        using var pen = new Pen(active
+            ? Color.FromArgb(25, 80, 170)
+            : Color.FromArgb(140, 145, 155), 1f);
+        graphics.DrawPolygon(pen, shape);
+
+        graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+    }
 }
