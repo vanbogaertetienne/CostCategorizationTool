@@ -1697,10 +1697,11 @@ internal class FilterableHeaderCell : DataGridViewColumnHeaderCell
                    value, formattedValue, errorText, cellStyle,
                    advancedBorderStyle, paintParts);
 
-        // Draw funnel icon in the right margin
+        // Draw funnel icon in the right margin, shifted left when sort glyph is also visible
         bool active = _hasFilter();
         const int w = 11, h = 12, margin = 5;
-        int fx = cellBounds.Right - w - margin;
+        int sortOffset = SortGlyphDirection != SortOrder.None ? 16 : 0;
+        int fx = cellBounds.Right - w - margin - sortOffset;
         int fy = cellBounds.Y + (cellBounds.Height - h) / 2;
 
         graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
