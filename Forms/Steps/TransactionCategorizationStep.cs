@@ -246,6 +246,17 @@ public class TransactionCategorizationStep : UserControl
         ctxMenu.Items.Add(miCombine);
         ctxMenu.Opening += (_, e) =>
         {
+            // Suppress the context menu when the click is on the column header row
+            // so that OnColumnHeaderMouseClick can handle it instead.
+            var hit = _groupsGrid.HitTest(
+                _groupsGrid.PointToClient(Cursor.Position).X,
+                _groupsGrid.PointToClient(Cursor.Position).Y);
+            if (hit.Type == DataGridViewHitTestType.ColumnHeader)
+            {
+                e.Cancel = true;
+                return;
+            }
+
             int sel = _groupsGrid.SelectedRows.Count;
             miCombine.Enabled = sel >= 2;
             e.Cancel = sel == 0;
