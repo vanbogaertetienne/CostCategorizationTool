@@ -409,24 +409,30 @@ public class TransactionCategorizationStep : UserControl
             .ToList();
     }
 
-    /// <summary>Returns groups re-built from the date-filtered transactions, with categories carried over.</summary>
+    /// <summary>Returns groups for the active date range, with CategoryId derived from their transactions.</summary>
     public List<TransactionGroup> GetFilteredGroups()
     {
-        if (!_dateFrom.HasValue && !_dateTo.HasValue) return _groups;
-
-        var filteredTxs = GetFilteredTransactions();
-        var baseGroups  = _grouperService.Group(filteredTxs);
-
-        // Carry over manually-assigned categories from the full group list
-        var categoryLookup = new Dictionary<(string, RuleType), int?>();
-        foreach (var g in _groups.Where(g => g.CategoryId.HasValue))
-            categoryLookup[(g.Pattern, g.RuleType)] = g.CategoryId;
-        foreach (var g in baseGroups)
+        List<TransactionGroup> groups;
+        if (!_dateFrom.HasValue && !_dateTo.HasValue)
         {
-            if (categoryLookup.TryGetValue((g.Pattern, g.RuleType), out var catId))
-                g.CategoryId = catId;
+            groups = _groups;
         }
-        return baseGroups;
+        else
+        {
+            groups = _grouperService.Group(GetFilteredTransactions());
+        }
+
+        // Derive CategoryId from transactions — this is the ground truth regardless of
+        // whether categorisation happened while a date filter was or wasn't active.
+        foreach (var g in groups)
+        {
+            g.CategoryId = g.Transactions
+                .Where(t => t.CategoryId.HasValue)
+                .GroupBy(t => t.CategoryId!.Value)
+                .OrderByDescending(grp => grp.Count())
+                .FirstOrDefault()?.Key;
+        }
+        return groups;
     }
 
     // ── View filter public API (called from MainForm View menu) ───────────────
