@@ -52,6 +52,7 @@ public class CsvParserService
 
         // ── Counterpart IBAN / BIC ────────────────────────────────────────────
         // More-specific names first so "nom de la contrepartie" doesn't match here
+        ("compte contrepartie",         "Counterpart"),   // Belfius
         ("rekeningnummer tegenpartij",  "Counterpart"),
         ("tegenrekeningnummer",         "Counterpart"),
         ("contrepartie",                "Counterpart"),
@@ -60,12 +61,14 @@ public class CsvParserService
         ("bic",                         "Counterpart"),
 
         // ── Counterpart name ──────────────────────────────────────────────────
+        ("nom contrepartie contient",   "CounterpartName"),  // Belfius
         ("nom de la contrepartie",      "CounterpartName"),
         ("naam van de tegenpartij",     "CounterpartName"),
         ("naam tegenrekening",          "CounterpartName"),
         ("naam",                        "CounterpartName"),
 
         // ── Communication / payment reference ─────────────────────────────────
+        ("communications",              "Communication"),  // Belfius (plural)
         ("communication",               "Communication"),
         ("mededeling",                  "Communication"),
         ("référence de contrepartie",   "Communication"),
@@ -160,7 +163,7 @@ public class CsvParserService
     private static int FindHeaderRow(string[] lines)
     {
         int best = 0, bestScore = -1;
-        for (int i = 0; i < Math.Min(10, lines.Length); i++)
+        for (int i = 0; i < Math.Min(20, lines.Length); i++)
         {
             if (!lines[i].Contains(';') && !lines[i].Contains(',') && !lines[i].Contains('\t'))
                 continue;
