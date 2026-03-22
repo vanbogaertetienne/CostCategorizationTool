@@ -399,6 +399,36 @@ public class TransactionCategorizationStep : UserControl
     public List<Transaction>      GetTransactions() => _transactions;
     public List<TransactionGroup> GetGroups()       => _groups;
 
+    /// <summary>Returns transactions filtered by the active date range (if any).</summary>
+    public List<Transaction> GetFilteredTransactions()
+    {
+        if (!_dateFrom.HasValue && !_dateTo.HasValue) return _transactions;
+        return _transactions.Where(t =>
+            (!_dateFrom.HasValue || t.ExecutionDate >= _dateFrom.Value) &&
+            (!_dateTo.HasValue   || t.ExecutionDate <= _dateTo.Value))
+            .ToList();
+    }
+
+    /// <summary>Returns groups re-built from the date-filtered transactions, with categories carried over.</summary>
+    public List<TransactionGroup> GetFilteredGroups()
+    {
+        if (!_dateFrom.HasValue && !_dateTo.HasValue) return _groups;
+
+        var filteredTxs = GetFilteredTransactions();
+        var baseGroups  = _grouperService.Group(filteredTxs);
+
+        // Carry over manually-assigned categories from the full group list
+        var categoryLookup = new Dictionary<(string, RuleType), int?>();
+        foreach (var g in _groups.Where(g => g.CategoryId.HasValue))
+            categoryLookup[(g.Pattern, g.RuleType)] = g.CategoryId;
+        foreach (var g in baseGroups)
+        {
+            if (categoryLookup.TryGetValue((g.Pattern, g.RuleType), out var catId))
+                g.CategoryId = catId;
+        }
+        return baseGroups;
+    }
+
     // ── View filter public API (called from MainForm View menu) ───────────────
 
     public void SetUncategorizedOnly(bool value)

@@ -367,9 +367,9 @@ public class MainForm : Form
     {
         if (_db == null || _categorizationStep == null) return;
 
-        var transactions = _categorizationStep.GetTransactions();
+        var transactions = _categorizationStep.GetFilteredTransactions();
         var categories   = _db.GetCategories();
-        var groups       = _categorizationStep.GetGroups();
+        var groups       = _categorizationStep.GetFilteredGroups();
 
         // Show the SummaryStep in a dialog
         using var form = new Form
