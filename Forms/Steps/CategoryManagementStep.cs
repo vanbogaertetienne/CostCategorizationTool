@@ -22,7 +22,8 @@ public class CategoryManagementStep : UserControl
     {
         _db = db;
         SuspendLayout();
-
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode       = AutoScaleMode.Dpi;
         BackColor = Color.White;
 
         // ── Description label ────────────────────────────────────────────────
@@ -64,7 +65,7 @@ public class CategoryManagementStep : UserControl
         _btnAdd = new Button
         {
             Text     = Resources.BtnAdd,
-            Size     = new Size(TextRenderer.MeasureText(Resources.BtnAdd, smFont).Width + 16, sbh),
+            Size     = new Size(UiScaler.BW(Resources.BtnAdd, smFont, 16), sbh),
             Location = new Point(sbx, sby),
             Font     = smFont
         };
@@ -72,7 +73,7 @@ public class CategoryManagementStep : UserControl
         _btnRename = new Button
         {
             Text     = Resources.BtnRename,
-            Size     = new Size(TextRenderer.MeasureText(Resources.BtnRename, smFont).Width + 16, sbh),
+            Size     = new Size(UiScaler.BW(Resources.BtnRename, smFont, 16), sbh),
             Location = new Point(sbx, sby),
             Font     = smFont
         };
@@ -80,7 +81,7 @@ public class CategoryManagementStep : UserControl
         _btnDelete = new Button
         {
             Text      = Resources.BtnDelete,
-            Size      = new Size(TextRenderer.MeasureText(Resources.BtnDelete, smFont).Width + 16, sbh),
+            Size      = new Size(UiScaler.BW(Resources.BtnDelete, smFont, 16), sbh),
             Location  = new Point(sbx, sby),
             ForeColor = Color.DarkRed,
             Font      = smFont
@@ -125,7 +126,7 @@ public class CategoryManagementStep : UserControl
         _btnAddRule = new Button
         {
             Text     = Resources.BtnAddRule,
-            Size     = new Size(TextRenderer.MeasureText(Resources.BtnAddRule, smFont).Width + 16, sbh),
+            Size     = new Size(UiScaler.BW(Resources.BtnAddRule, smFont, 16), sbh),
             Location = new Point(rbx, sby),
             Font     = smFont
         };
@@ -133,7 +134,7 @@ public class CategoryManagementStep : UserControl
         _btnDeleteRule = new Button
         {
             Text      = Resources.BtnDeleteRule,
-            Size      = new Size(TextRenderer.MeasureText(Resources.BtnDeleteRule, smFont).Width + 16, sbh),
+            Size      = new Size(UiScaler.BW(Resources.BtnDeleteRule, smFont, 16), sbh),
             Location  = new Point(rbx, sby),
             ForeColor = Color.DarkRed,
             Font      = smFont
@@ -172,7 +173,9 @@ public class CategoryManagementStep : UserControl
 
     private void LayoutControls()
     {
-        int h = ClientSize.Height - 68;
+        int Sc(int v) => (int)(v * (float)DeviceDpi / 96f);
+        int gap = Sc(16);
+        int h   = ClientSize.Height - Sc(68);
         h = Math.Max(h, 200);
 
         // Left panel
@@ -181,34 +184,34 @@ public class CategoryManagementStep : UserControl
 
         if (leftPanel != null)
         {
-            int lpw = Math.Max(_btnAdd.Width + _btnRename.Width + _btnDelete.Width + 12, 210);
-            leftPanel.Location = new Point(16, 52);
+            int lpw = Math.Max(_btnAdd.Width + _btnRename.Width + _btnDelete.Width + Sc(12), Sc(210));
+            leftPanel.Location = new Point(gap, Sc(52));
             leftPanel.Size     = new Size(lpw, h);
-            _categoryList.Size = new Size(lpw, h - 56);
-            int lbx = 0, lby = h - 48;
-            _btnAdd.Location    = new Point(lbx, lby); lbx += _btnAdd.Width + 4;
-            _btnRename.Location = new Point(lbx, lby); lbx += _btnRename.Width + 4;
+            _categoryList.Size = new Size(lpw, h - Sc(56));
+            int lbx = 0, lby = h - Sc(48);
+            _btnAdd.Location    = new Point(lbx, lby); lbx += _btnAdd.Width + Sc(4);
+            _btnRename.Location = new Point(lbx, lby); lbx += _btnRename.Width + Sc(4);
             _btnDelete.Location = new Point(lbx, lby);
         }
 
         if (rightPanel != null)
         {
-            int lpw  = leftPanel?.Width ?? 210;
-            int rpx  = 16 + lpw + 16;
-            int rw   = ClientSize.Width - rpx - 16;
-            rightPanel.Location = new Point(rpx, 52);
+            int lpw  = leftPanel?.Width ?? Sc(210);
+            int rpx  = gap + lpw + gap;
+            int rw   = ClientSize.Width - rpx - gap;
+            rightPanel.Location = new Point(rpx, Sc(52));
             rightPanel.Size     = new Size(Math.Max(rw, 200), h);
-            _rulesList.Size     = new Size(Math.Max(rw, 200), h - 56);
+            _rulesList.Size     = new Size(Math.Max(rw, 200), h - Sc(56));
             _rulesList.Columns[1].Width = Math.Max(100, rw - 80 - 100 - 4);
-            int rbx2 = 0, rby = h - 48;
-            _btnAddRule.Location    = new Point(rbx2, rby); rbx2 += _btnAddRule.Width + 4;
+            int rbx2 = 0, rby = h - Sc(48);
+            _btnAddRule.Location    = new Point(rbx2, rby); rbx2 += _btnAddRule.Width + Sc(4);
             _btnDeleteRule.Location = new Point(rbx2, rby);
         }
 
         // Description label width
         var descLabel = Controls.OfType<Label>().FirstOrDefault();
         if (descLabel != null)
-            descLabel.Width = ClientSize.Width - 32;
+            descLabel.Width = ClientSize.Width - 2 * gap;
     }
 
     public void RefreshData()

@@ -174,6 +174,34 @@ Are you sure?</value></data>
   <data name="NewNameLbl" xml:space="preserve"><value>New name:</value></data>
   <data name="RenameCatTitle" xml:space="preserve"><value>Rename Category</value></data>
 
+  <!-- View Menu -->
+  <data name="ViewMenu" xml:space="preserve"><value>&amp;View</value></data>
+  <data name="ViewUncategorized" xml:space="preserve"><value>&amp;Uncategorized only</value></data>
+  <data name="ViewIncomingOnly" xml:space="preserve"><value>&amp;Incoming only</value></data>
+  <data name="ViewOutgoingOnly" xml:space="preserve"><value>&amp;Outgoing only</value></data>
+
+  <!-- Date Filter -->
+  <data name="DateFilterAll" xml:space="preserve"><value>All dates</value></data>
+  <data name="DateFilterThisYear" xml:space="preserve"><value>This year</value></data>
+  <data name="DateFilterLastYear" xml:space="preserve"><value>Last year</value></data>
+  <data name="DateFilterThisQuarter" xml:space="preserve"><value>This quarter</value></data>
+  <data name="DateFilterLastQuarter" xml:space="preserve"><value>Last quarter</value></data>
+  <data name="DateFilterCustom" xml:space="preserve"><value>Custom period...</value></data>
+  <data name="DateFilterFrom" xml:space="preserve"><value>From:</value></data>
+  <data name="DateFilterTo" xml:space="preserve"><value>To:</value></data>
+
+  <!-- Column Filter -->
+  <data name="ColFilterMenuItem" xml:space="preserve"><value>Filter (contains)...</value></data>
+  <data name="ColFilterClear" xml:space="preserve"><value>Clear filter</value></data>
+  <data name="ColFilterClearAll" xml:space="preserve"><value>Clear all filters</value></data>
+  <data name="ColFilterPrompt" xml:space="preserve"><value>Show rows where "{0}" contains:</value></data>
+  <data name="ColFilterTitle" xml:space="preserve"><value>Column Filter</value></data>
+
+  <!-- New Category in ComboBox -->
+  <data name="NewCategoryItem" xml:space="preserve"><value>+ New category...</value></data>
+  <data name="NewCatTitle" xml:space="preserve"><value>New Category</value></data>
+  <data name="NewCatPrompt" xml:space="preserve"><value>Category name:</value></data>
+
   <!-- Frequency / Direction labels -->
   <data name="FreqWeekly" xml:space="preserve"><value>Weekly</value></data>
   <data name="FreqMonthly" xml:space="preserve"><value>Monthly</value></data>

@@ -162,6 +162,34 @@ internal static class Resources
     public static string NewNameLbl        => G("NewNameLbl");
     public static string RenameCatTitle    => G("RenameCatTitle");
 
+    // ── View Menu ────────────────────────────────────────────────────────────
+    public static string ViewMenu          => G("ViewMenu");
+    public static string ViewUncategorized => G("ViewUncategorized");
+    public static string ViewIncomingOnly  => G("ViewIncomingOnly");
+    public static string ViewOutgoingOnly  => G("ViewOutgoingOnly");
+
+    // ── Date Filter ──────────────────────────────────────────────────────────
+    public static string DateFilterAll     => G("DateFilterAll");
+    public static string DateFilterThisYear => G("DateFilterThisYear");
+    public static string DateFilterLastYear => G("DateFilterLastYear");
+    public static string DateFilterThisQuarter => G("DateFilterThisQuarter");
+    public static string DateFilterLastQuarter => G("DateFilterLastQuarter");
+    public static string DateFilterCustom  => G("DateFilterCustom");
+    public static string DateFilterFrom    => G("DateFilterFrom");
+    public static string DateFilterTo      => G("DateFilterTo");
+
+    // ── Column Filter ────────────────────────────────────────────────────────
+    public static string ColFilterMenuItem => G("ColFilterMenuItem");
+    public static string ColFilterClear    => G("ColFilterClear");
+    public static string ColFilterClearAll => G("ColFilterClearAll");
+    public static string ColFilterPrompt   => G("ColFilterPrompt");
+    public static string ColFilterTitle    => G("ColFilterTitle");
+
+    // ── New Category ─────────────────────────────────────────────────────────
+    public static string NewCategoryItem   => G("NewCategoryItem");
+    public static string NewCatTitle       => G("NewCatTitle");
+    public static string NewCatPrompt      => G("NewCatPrompt");
+
     // ── Frequency / Direction labels ─────────────────────────────────────────
     public static string FreqWeekly        => G("FreqWeekly");
     public static string FreqMonthly       => G("FreqMonthly");

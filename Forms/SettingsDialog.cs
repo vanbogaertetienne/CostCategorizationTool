@@ -20,6 +20,8 @@ public class SettingsDialog : Form
         _settings = settings;
 
         SuspendLayout();
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode       = AutoScaleMode.Dpi;
 
         var btnF = new Font("Segoe UI", 10f);
 
@@ -83,7 +85,7 @@ public class SettingsDialog : Form
         var btnResetDb = new Button
         {
             Text      = Resources.BtnResetDb,
-            Size      = new Size(TextRenderer.MeasureText(Resources.BtnResetDb, btnF).Width + 24, 36),
+            Size      = new Size(UiScaler.BW(Resources.BtnResetDb, btnF), 36),
             Location  = new Point(12, 28),
             ForeColor = Color.DarkRed,
             Font      = btnF
@@ -110,7 +112,7 @@ public class SettingsDialog : Form
         var btnResetTx = new Button
         {
             Text      = Resources.BtnResetTx,
-            Size      = new Size(TextRenderer.MeasureText(Resources.BtnResetTx, btnF).Width + 24, 36),
+            Size      = new Size(UiScaler.BW(Resources.BtnResetTx, btnF), 36),
             Location  = new Point(12, 150),
             ForeColor = Color.DarkRed,
             Font      = btnF
@@ -132,7 +134,7 @@ public class SettingsDialog : Form
             btnResetDb, lblResetDb, separator, btnResetTx, lblResetTx
         });
 
-        int closeW = TextRenderer.MeasureText(Resources.Close, btnF).Width + 24;
+        int closeW = UiScaler.BW(Resources.Close, btnF);
         var btnClose = new Button
         {
             Text         = Resources.Close,

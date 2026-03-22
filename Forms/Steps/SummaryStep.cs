@@ -19,7 +19,8 @@ public class SummaryStep : UserControl
     public SummaryStep()
     {
         SuspendLayout();
-
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode       = AutoScaleMode.Dpi;
         BackColor = Color.White;
 
         var titleLabel = new Label
@@ -57,7 +58,7 @@ public class SummaryStep : UserControl
         _btnExport = new Button
         {
             Text   = Resources.BtnExportCsv,
-            Size   = new Size(TextRenderer.MeasureText(Resources.BtnExportCsv, btnFont).Width + 24, 32),
+            Size   = new Size(UiScaler.BW(Resources.BtnExportCsv, btnFont), 32),
             Font   = btnFont,
             Anchor = AnchorStyles.Bottom | AnchorStyles.Right
         };
@@ -65,7 +66,7 @@ public class SummaryStep : UserControl
         _btnExportExcel = new Button
         {
             Text      = Resources.BtnExportExcel,
-            Size      = new Size(TextRenderer.MeasureText(Resources.BtnExportExcel, btnFont).Width + 24, 32),
+            Size      = new Size(UiScaler.BW(Resources.BtnExportExcel, btnFont), 32),
             Font      = btnFont,
             Anchor    = AnchorStyles.Bottom | AnchorStyles.Right,
             BackColor = Color.FromArgb(33, 115, 70),
@@ -96,15 +97,17 @@ public class SummaryStep : UserControl
 
     private void LayoutControls()
     {
-        int w = ClientSize.Width - 32;
-        int h = ClientSize.Height - 52 - 44;
-        _summaryList.Location = new Point(16, 52);
+        int Sc(int v) => (int)(v * (float)DeviceDpi / 96f);
+        int m  = Sc(16);
+        int w  = ClientSize.Width - 2 * m;
+        int h  = ClientSize.Height - Sc(52) - Sc(44);
+        _summaryList.Location = new Point(m, Sc(52));
         _summaryList.Size     = new Size(Math.Max(w, 200), Math.Max(h, 60));
 
-        int bottom = _summaryList.Bottom + 8;
-        _lblTotal.Location        = new Point(16, bottom);
-        _btnExport.Location       = new Point(ClientSize.Width - 16 - _btnExport.Width, bottom - 2);
-        _btnExportExcel.Location  = new Point(_btnExport.Left - 8 - _btnExportExcel.Width, bottom - 2);
+        int bottom = _summaryList.Bottom + Sc(8);
+        _lblTotal.Location        = new Point(m, bottom);
+        _btnExport.Location       = new Point(ClientSize.Width - m - _btnExport.Width, bottom - 2);
+        _btnExportExcel.Location  = new Point(_btnExport.Left - Sc(8) - _btnExportExcel.Width, bottom - 2);
 
         // Resize columns proportionally
         if (_summaryList.Columns.Count >= 3)

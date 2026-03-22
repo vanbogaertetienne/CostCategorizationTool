@@ -13,6 +13,8 @@ public class CategoryManagementDialog : Form
     public CategoryManagementDialog(AppDatabase db)
     {
         SuspendLayout();
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode       = AutoScaleMode.Dpi;
 
         Text            = Resources.CatTitle;
         Size            = new Size(830, 560);
@@ -31,7 +33,7 @@ public class CategoryManagementDialog : Form
         };
 
         var closeFont = new Font("Segoe UI", 9.5f);
-        int closeW    = TextRenderer.MeasureText(Resources.Close, closeFont).Width + 24;
+        int closeW    = UiScaler.BW(Resources.Close, closeFont);
         var btnClose  = new Button
         {
             Text         = Resources.Close,

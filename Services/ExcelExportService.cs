@@ -14,7 +14,7 @@ public class ExcelExportService
     {
         using var wb = new XLWorkbook();
 
-        WriteTransactions(wb, transactions, categories);
+        WriteTransactions(wb, transactions, categories, groups);
         WriteCategories(wb, transactions, categories);
         WriteGroups(wb, groups, categories);
         WritePivot(wb);
@@ -25,9 +25,16 @@ public class ExcelExportService
     // ── Sheet 1: All transactions ─────────────────────────────────────────────
 
     private static void WriteTransactions(
-        XLWorkbook wb, List<Transaction> transactions, List<Category> categories)
+        XLWorkbook wb, List<Transaction> transactions, List<Category> categories,
+        List<TransactionGroup> groups)
     {
         var ws = wb.AddWorksheet("Transactions");
+
+        // Build transaction → group display name lookup
+        var txGroupName = new Dictionary<Transaction, string>(ReferenceEqualityComparer.Instance);
+        foreach (var g in groups)
+            foreach (var tx in g.Transactions)
+                txGroupName[tx] = g.DisplayName;
 
         // Headers
         string[] headers =
@@ -35,7 +42,7 @@ public class ExcelExportService
             "Date", "Year", "Quarter", "Month",
             "Amount", "Currency", "AccountNumber",
             "TransactionType", "Counterpart", "CounterpartName",
-            "Communication", "Details", "Category"
+            "Communication", "Details", "Category", "Group"
         };
         for (int c = 0; c < headers.Length; c++)
             ws.Cell(1, c + 1).Value = headers[c];
@@ -48,6 +55,7 @@ public class ExcelExportService
             var cat = tx.CategoryId.HasValue
                 ? categories.FirstOrDefault(c => c.Id == tx.CategoryId)?.Name ?? ""
                 : "";
+            var grpName = txGroupName.TryGetValue(tx, out var gn) ? gn : "";
 
             ws.Cell(row, 1).Value  = tx.ExecutionDate.ToString("dd/MM/yyyy");
             ws.Cell(row, 2).Value  = tx.ExecutionDate.Year;
@@ -62,6 +70,7 @@ public class ExcelExportService
             ws.Cell(row, 11).Value = tx.Communication;
             ws.Cell(row, 12).Value = tx.Details;
             ws.Cell(row, 13).Value = cat;
+            ws.Cell(row, 14).Value = grpName;
         }
 
         // Format as Excel table

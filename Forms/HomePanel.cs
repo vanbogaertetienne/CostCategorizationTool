@@ -18,6 +18,8 @@ public class HomePanel : UserControl
     {
         _settings = settings;
         SuspendLayout();
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode       = AutoScaleMode.Dpi;
         BackColor = Color.White;
 
         // ── Title ────────────────────────────────────────────────────────────
@@ -46,7 +48,7 @@ public class HomePanel : UserControl
         var btnNew = new Button
         {
             Text      = Resources.BtnNewProject,
-            Size      = new Size(TextRenderer.MeasureText(Resources.BtnNewProject, btnFont).Width + 24, btnH),
+            Size      = new Size(UiScaler.BW(Resources.BtnNewProject, btnFont), btnH),
             Location  = new Point(40, btnY),
             Font      = btnFont,
             BackColor = Color.FromArgb(0, 122, 204),
@@ -59,7 +61,7 @@ public class HomePanel : UserControl
         var btnOpen = new Button
         {
             Text      = Resources.BtnOpenProject,
-            Size      = new Size(TextRenderer.MeasureText(Resources.BtnOpenProject, btnFont).Width + 24, btnH),
+            Size      = new Size(UiScaler.BW(Resources.BtnOpenProject, btnFont), btnH),
             Location  = new Point(40 + btnNew.Width + 10, btnY),
             Font      = btnFont
         };

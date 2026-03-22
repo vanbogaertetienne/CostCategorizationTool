@@ -174,6 +174,34 @@ Les catégories par défaut ont été restaurées.</value></data>
   <data name="NewNameLbl" xml:space="preserve"><value>Nouveau nom :</value></data>
   <data name="RenameCatTitle" xml:space="preserve"><value>Renommer la catégorie</value></data>
 
+  <!-- View Menu -->
+  <data name="ViewMenu" xml:space="preserve"><value>&amp;Affichage</value></data>
+  <data name="ViewUncategorized" xml:space="preserve"><value>&amp;Non catégorisées seulement</value></data>
+  <data name="ViewIncomingOnly" xml:space="preserve"><value>Entrées seulement</value></data>
+  <data name="ViewOutgoingOnly" xml:space="preserve"><value>Sorties seulement</value></data>
+
+  <!-- Date Filter -->
+  <data name="DateFilterAll" xml:space="preserve"><value>Toutes les dates</value></data>
+  <data name="DateFilterThisYear" xml:space="preserve"><value>Cette année</value></data>
+  <data name="DateFilterLastYear" xml:space="preserve"><value>L'année dernière</value></data>
+  <data name="DateFilterThisQuarter" xml:space="preserve"><value>Ce trimestre</value></data>
+  <data name="DateFilterLastQuarter" xml:space="preserve"><value>Le trimestre dernier</value></data>
+  <data name="DateFilterCustom" xml:space="preserve"><value>Période personnalisée...</value></data>
+  <data name="DateFilterFrom" xml:space="preserve"><value>Du :</value></data>
+  <data name="DateFilterTo" xml:space="preserve"><value>Au :</value></data>
+
+  <!-- Column Filter -->
+  <data name="ColFilterMenuItem" xml:space="preserve"><value>Filtrer (contient)...</value></data>
+  <data name="ColFilterClear" xml:space="preserve"><value>Effacer le filtre</value></data>
+  <data name="ColFilterClearAll" xml:space="preserve"><value>Effacer tous les filtres</value></data>
+  <data name="ColFilterPrompt" xml:space="preserve"><value>Afficher les lignes où « {0} » contient :</value></data>
+  <data name="ColFilterTitle" xml:space="preserve"><value>Filtre de colonne</value></data>
+
+  <!-- New Category in ComboBox -->
+  <data name="NewCategoryItem" xml:space="preserve"><value>+ Nouvelle catégorie...</value></data>
+  <data name="NewCatTitle" xml:space="preserve"><value>Nouvelle catégorie</value></data>
+  <data name="NewCatPrompt" xml:space="preserve"><value>Nom de la catégorie :</value></data>
+
   <!-- Frequency / Direction labels -->
   <data name="FreqWeekly" xml:space="preserve"><value>Hebdomadaire</value></data>
   <data name="FreqMonthly" xml:space="preserve"><value>Mensuel</value></data>

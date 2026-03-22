@@ -31,12 +31,18 @@ public class MainForm : Form
     private readonly ToolStripMenuItem _miExportExcel;
     private readonly ToolStripMenuItem _miRecentProjects;
 
+    // View menu items
+    private readonly ToolStripMenuItem _miViewUncategorized;
+    private readonly ToolStripMenuItem _miViewIncoming;
+    private readonly ToolStripMenuItem _miViewOutgoing;
+
     public MainForm()
     {
         _settings = AppSettings.Load();
 
         SuspendLayout();
-
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode       = AutoScaleMode.Dpi;
 
         Text            = Resources.AppTitle;
         Size            = new Size(1050, 760);
@@ -156,8 +162,57 @@ public class MainForm : Form
         var settingsItem = new ToolStripMenuItem($"&{Resources.Settings}", null, OnOpenSettings);
         toolsMenu.DropDownItems.Add(settingsItem);
 
+        // ── View menu ─────────────────────────────────────────────────────────
+        var viewMenu = new ToolStripMenuItem(Resources.ViewMenu);
+
+        _miViewUncategorized = new ToolStripMenuItem(Resources.ViewUncategorized)
+        {
+            CheckOnClick = false,
+            Checked      = false,
+            Enabled      = false
+        };
+        _miViewUncategorized.Click += (_, _) =>
+        {
+            _miViewUncategorized.Checked = !_miViewUncategorized.Checked;
+            _categorizationStep?.SetUncategorizedOnly(_miViewUncategorized.Checked);
+        };
+
+        _miViewIncoming = new ToolStripMenuItem(Resources.ViewIncomingOnly)
+        {
+            CheckOnClick = false,
+            Checked      = false,
+            Enabled      = false
+        };
+        _miViewIncoming.Click += (_, _) =>
+        {
+            bool newState = !_miViewIncoming.Checked;
+            _miViewIncoming.Checked  = newState;
+            _miViewOutgoing!.Checked  = false;
+            _categorizationStep?.SetIncomingOnly(newState);
+        };
+
+        _miViewOutgoing = new ToolStripMenuItem(Resources.ViewOutgoingOnly)
+        {
+            CheckOnClick = false,
+            Checked      = false,
+            Enabled      = false
+        };
+        _miViewOutgoing.Click += (_, _) =>
+        {
+            bool newState = !_miViewOutgoing.Checked;
+            _miViewOutgoing.Checked  = newState;
+            _miViewIncoming.Checked  = false;
+            _categorizationStep?.SetOutgoingOnly(newState);
+        };
+
+        viewMenu.DropDownItems.Add(_miViewUncategorized);
+        viewMenu.DropDownItems.Add(new ToolStripSeparator());
+        viewMenu.DropDownItems.Add(_miViewIncoming);
+        viewMenu.DropDownItems.Add(_miViewOutgoing);
+
         menuStrip.Items.Add(fileMenu);
         menuStrip.Items.Add(toolsMenu);
+        menuStrip.Items.Add(viewMenu);
 
         // ── Assemble ──────────────────────────────────────────────────────────
         Controls.Add(_contentPanel);
@@ -179,7 +234,7 @@ public class MainForm : Form
         var btn = new Button
         {
             Text      = text,
-            Size      = new Size(TextRenderer.MeasureText(text, font).Width + 28, 40),
+            Size      = new Size(UiScaler.BW(text, font, 28), 40),
             Font      = font,
             FlatStyle = FlatStyle.Flat,
             BackColor = active ? Color.FromArgb(0, 100, 180) : Color.FromArgb(255, 255, 255),
@@ -192,7 +247,7 @@ public class MainForm : Form
     }
 
     private static int ArrowW(Font font) =>
-        TextRenderer.MeasureText("›", font).Width + 4;
+        UiScaler.BW("›", font, 4);
 
     // ── Project lifecycle ────────────────────────────────────────────────────
 
@@ -225,9 +280,12 @@ public class MainForm : Form
             _projectLabel.Text = $"{Path.GetFileName(path)}  —  {path}";
             Text = $"{Resources.AppTitle} — {Path.GetFileNameWithoutExtension(path)}";
 
-            _miCloseProject.Enabled = true;
-            _miImportCsv.Enabled    = true;
-            _miExportExcel.Enabled  = true;
+            _miCloseProject.Enabled      = true;
+            _miImportCsv.Enabled         = true;
+            _miExportExcel.Enabled       = true;
+            _miViewUncategorized.Enabled = true;
+            _miViewIncoming.Enabled      = true;
+            _miViewOutgoing.Enabled      = true;
 
             if (count > 0)
             {
@@ -264,10 +322,16 @@ public class MainForm : Form
         _projectLabel.Text    = "";
         Text = Resources.AppTitle;
 
-        _miCloseProject.Enabled = false;
-        _miImportCsv.Enabled    = false;
-        _miExportExcel.Enabled  = false;
-        _categorizationStep     = null;
+        _miCloseProject.Enabled      = false;
+        _miImportCsv.Enabled         = false;
+        _miExportExcel.Enabled       = false;
+        _miViewUncategorized.Enabled = false;
+        _miViewIncoming.Enabled      = false;
+        _miViewOutgoing.Enabled      = false;
+        _miViewUncategorized.Checked = false;
+        _miViewIncoming.Checked      = false;
+        _miViewOutgoing.Checked      = false;
+        _categorizationStep          = null;
     }
 
     // ── CSV Import ────────────────────────────────────────────────────────────
