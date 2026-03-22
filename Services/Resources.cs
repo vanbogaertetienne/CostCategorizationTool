@@ -206,5 +206,6 @@ internal static class Resources
     public static string SplitGroupPreview  => G("SplitGroupPreview");
     public static string SplitNoMatch       => G("SplitNoMatch");
     public static string SplitAllMatch      => G("SplitAllMatch");
+    public static string SplitNoSelection   => G("SplitNoSelection");
     public static string ExportColStartDate => G("ExportColStartDate");
 }

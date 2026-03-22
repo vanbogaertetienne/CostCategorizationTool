@@ -214,11 +214,12 @@ Les catégories par défaut ont été restaurées.</value></data>
   <!-- Split group dialog -->
   <data name="SplitGroupTitle" xml:space="preserve"><value>Diviser le groupe</value></data>
   <data name="SplitGroupLabel" xml:space="preserve"><value>Groupe</value></data>
-  <data name="SplitGroupInstr" xml:space="preserve"><value>Sélectionnez un jeton à extraire dans un nouveau groupe :</value></data>
+  <data name="SplitGroupInstr" xml:space="preserve"><value>Ctrl+clic pour sélectionner plusieurs jetons. Tous doivent apparaître dans les détails.</value></data>
   <data name="SplitGroupManual" xml:space="preserve"><value>Ou saisissez un jeton manuellement :</value></data>
-  <data name="SplitGroupPreview" xml:space="preserve"><value>{0} transaction(s) sur {1} correspondent à ce jeton.</value></data>
-  <data name="SplitNoMatch" xml:space="preserve"><value>Aucune transaction ne contient « {0} ».</value></data>
-  <data name="SplitAllMatch" xml:space="preserve"><value>Toutes les transactions correspondent à « {0} ». Veuillez choisir un jeton plus spécifique.</value></data>
+  <data name="SplitGroupPreview" xml:space="preserve"><value>{0} transaction(s) sur {1} seront déplacées vers le nouveau groupe.</value></data>
+  <data name="SplitNoSelection" xml:space="preserve"><value>Sélectionnez un ou plusieurs jetons ci-dessus pour prévisualiser la division.</value></data>
+  <data name="SplitNoMatch" xml:space="preserve"><value>Aucune transaction ne correspond à « {0} ».</value></data>
+  <data name="SplitAllMatch" xml:space="preserve"><value>Toutes les transactions correspondent à « {0} ». Veuillez choisir des jetons plus spécifiques.</value></data>
   <!-- Groups export -->
   <data name="ExportColStartDate" xml:space="preserve"><value>Date de début</value></data>
 </root>

@@ -582,12 +582,12 @@ public class TransactionCategorizationStep : UserControl
         _suppressEvents = false;
         FitColumns(_groupsGrid);
 
-        // Re-trigger detail view: events were suppressed during row rebuild so the
-        // detail grid stays in sync with whatever row is now selected.
-        if (_groupsGrid.SelectedRows.Count > 0)
-            OnGroupSelectionChanged(null, EventArgs.Empty);
-        else if (_groupsGrid.Rows.Count > 0)
-            _groupsGrid.Rows[0].Selected = true;   // fires SelectionChanged → OnGroupSelectionChanged
+        // Ensure at least one row is selected, then always explicitly sync the
+        // detail grid + button state (setting .Selected on an already-selected row
+        // does not re-fire SelectionChanged, so we call the handler directly).
+        if (_groupsGrid.Rows.Count > 0 && _groupsGrid.SelectedRows.Count == 0)
+            _groupsGrid.Rows[0].Selected = true;
+        OnGroupSelectionChanged(null, EventArgs.Empty);
     }
 
     private string GetGroupColumnText(TransactionGroup g, int colIdx) => colIdx switch
@@ -1061,6 +1061,7 @@ public class TransactionCategorizationStep : UserControl
 
     private void OnGroupSelectionChanged(object? sender, EventArgs e)
     {
+        if (_suppressEvents) return;
         int sel = _groupsGrid.SelectedRows.Count;
 
         if (sel == 0)
@@ -1191,22 +1192,24 @@ public class TransactionCategorizationStep : UserControl
         using var dlg = new SplitGroupDialog(group.DisplayName, candidateTokens, group.Transactions);
         if (dlg.ShowDialog(ParentForm) != DialogResult.OK) return;
 
-        string token = dlg.SelectedToken;
-        if (string.IsNullOrWhiteSpace(token)) return;
+        var tokens = dlg.SelectedTokens;
+        if (tokens.Count == 0) return;
 
+        // Transaction must contain ALL selected tokens
         var matching = group.Transactions
-            .Where(t => t.Details.Contains(token, StringComparison.OrdinalIgnoreCase))
+            .Where(t => tokens.All(tok =>
+                t.Details.Contains(tok, StringComparison.OrdinalIgnoreCase)))
             .ToList();
 
         if (matching.Count == 0)
         {
-            MessageBox.Show(string.Format(Resources.SplitNoMatch, token),
+            MessageBox.Show(string.Format(Resources.SplitNoMatch, string.Join(" + ", tokens)),
                 Resources.CannotSplitTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         if (matching.Count == group.Count)
         {
-            MessageBox.Show(string.Format(Resources.SplitAllMatch, token),
+            MessageBox.Show(string.Format(Resources.SplitAllMatch, string.Join(" + ", tokens)),
                 Resources.CannotSplitTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
@@ -1217,11 +1220,12 @@ public class TransactionCategorizationStep : UserControl
                         : hasPos           ? AmountSign.Positive
                                            : AmountSign.Negative;
 
+        string newName = string.Join(" ", tokens);
         var newGroup = new TransactionGroup
         {
             RuleType     = RuleType.Details,
-            Pattern      = token,
-            DisplayName  = token,
+            Pattern      = newName,
+            DisplayName  = newName,
             DetectedSign = sign,
             Transactions = matching
         };
@@ -1236,6 +1240,18 @@ public class TransactionCategorizationStep : UserControl
 
         PopulateGroupsGrid();
         UpdateProgress();
+
+        // Re-select the old group so the user can immediately split it again
+        foreach (DataGridViewRow row in _groupsGrid.Rows)
+        {
+            if (ReferenceEquals(row.Tag, group))
+            {
+                _groupsGrid.ClearSelection();
+                row.Selected = true;
+                _groupsGrid.FirstDisplayedScrollingRowIndex = row.Index;
+                break;
+            }
+        }
     }
 
     private void OnCombineGroups(object? sender, EventArgs e)
@@ -1433,13 +1449,13 @@ public class TransactionCategorizationStep : UserControl
 
 public class SplitGroupDialog : Form
 {
-    public string SelectedToken { get; private set; } = "";
+    public IReadOnlyList<string> SelectedTokens { get; private set; } = [];
 
     public SplitGroupDialog(string groupName, List<string> tokens, List<Transaction> transactions)
     {
         SuspendLayout();
         Text            = Resources.SplitGroupTitle;
-        Size            = new Size(460, 390);
+        Size            = new Size(480, 440);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition   = FormStartPosition.CenterParent;
         MaximizeBox     = false;
@@ -1450,83 +1466,78 @@ public class SplitGroupDialog : Form
             Text     = $"{Resources.SplitGroupLabel}: {groupName}",
             Font     = new Font("Segoe UI", 9f, FontStyle.Bold),
             Location = new Point(12, 12),
-            Size     = new Size(420, 18),
+            Size     = new Size(448, 18),
             AutoSize = false
         };
 
         var lblInstr = new Label
         {
             Text     = Resources.SplitGroupInstr,
-            Location = new Point(12, 36),
-            Size     = new Size(420, 18),
+            Location = new Point(12, 34),
+            Size     = new Size(448, 18),
             AutoSize = false
         };
 
+        // Multi-select list box (Ctrl/Shift to pick multiple tokens)
         var listBox = new ListBox
         {
-            Location      = new Point(12, 58),
-            Size          = new Size(420, 160),
-            SelectionMode = SelectionMode.One,
-            Font          = new Font("Consolas", 9f)
+            Location      = new Point(12, 56),
+            Size          = new Size(448, 300),
+            SelectionMode = SelectionMode.MultiExtended,
+            Font          = new Font("Consolas", 9f),
+            IntegralHeight = false
         };
-        foreach (var t in tokens)
-            listBox.Items.Add(t);
-
-        var lblManual = new Label
-        {
-            Text     = Resources.SplitGroupManual,
-            Location = new Point(12, 228),
-            AutoSize = true
-        };
-
-        var txtToken = new TextBox
-        {
-            Location = new Point(12, 248),
-            Size     = new Size(420, 24)
-        };
+        foreach (var tok in tokens)
+            listBox.Items.Add(tok);
 
         var lblPreview = new Label
         {
-            Text      = "",
-            Location  = new Point(12, 280),
-            Size      = new Size(420, 18),
+            Text      = Resources.SplitNoSelection,
+            Location  = new Point(12, 364),
+            Size      = new Size(448, 18),
             ForeColor = Color.DimGray,
             AutoSize  = false
         };
 
         void UpdatePreview()
         {
-            string tok = txtToken.Text.Trim();
-            lblPreview.Text = string.IsNullOrEmpty(tok) ? "" :
-                string.Format(Resources.SplitGroupPreview,
-                    transactions.Count(t => t.Details.Contains(tok, StringComparison.OrdinalIgnoreCase)),
-                    transactions.Count);
+            var selected = listBox.SelectedItems.Cast<string>().ToList();
+            if (selected.Count == 0)
+            {
+                lblPreview.Text      = Resources.SplitNoSelection;
+                lblPreview.ForeColor = Color.DimGray;
+                return;
+            }
+            int count = transactions.Count(t =>
+                selected.All(tok => t.Details.Contains(tok, StringComparison.OrdinalIgnoreCase)));
+            lblPreview.ForeColor = count > 0 && count < transactions.Count
+                ? Color.DarkGreen : Color.DarkRed;
+            lblPreview.Text = string.Format(Resources.SplitGroupPreview, count, transactions.Count);
         }
 
-        listBox.SelectedIndexChanged += (_, _) =>
-        {
-            if (listBox.SelectedItem is string s) { txtToken.Text = s; txtToken.SelectAll(); }
-        };
-        txtToken.TextChanged += (_, _) => UpdatePreview();
+        listBox.SelectedIndexChanged += (_, _) => UpdatePreview();
 
         var btnOk = new Button
         {
             Text         = "OK",
             DialogResult = DialogResult.OK,
-            Location     = new Point(264, 316),
+            Location     = new Point(284, 390),
             Size         = new Size(80, 28)
         };
         var btnCancel = new Button
         {
             Text         = Resources.Cancel,
             DialogResult = DialogResult.Cancel,
-            Location     = new Point(352, 316),
+            Location     = new Point(372, 390),
             Size         = new Size(80, 28)
         };
 
-        btnOk.Click += (_, _) => { SelectedToken = txtToken.Text.Trim(); };
+        btnOk.Click += (_, _) =>
+        {
+            SelectedTokens = listBox.SelectedItems.Cast<string>().ToList();
+        };
 
-        Controls.AddRange(new Control[] { lblGroup, lblInstr, listBox, lblManual, txtToken, lblPreview, btnOk, btnCancel });
+        Controls.AddRange(new Control[] { lblGroup, lblInstr, listBox, lblPreview, btnOk, btnCancel });
         AcceptButton = btnOk;
         CancelButton = btnCancel;
         ResumeLayout(false);

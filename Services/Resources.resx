@@ -214,11 +214,12 @@ Are you sure?</value></data>
   <!-- Split group dialog -->
   <data name="SplitGroupTitle" xml:space="preserve"><value>Split Group</value></data>
   <data name="SplitGroupLabel" xml:space="preserve"><value>Group</value></data>
-  <data name="SplitGroupInstr" xml:space="preserve"><value>Select a token to extract into a new group:</value></data>
+  <data name="SplitGroupInstr" xml:space="preserve"><value>Ctrl+click to select multiple tokens. All must appear in the transaction details.</value></data>
   <data name="SplitGroupManual" xml:space="preserve"><value>Or type a token manually:</value></data>
-  <data name="SplitGroupPreview" xml:space="preserve"><value>{0} of {1} transactions match this token.</value></data>
-  <data name="SplitNoMatch" xml:space="preserve"><value>No transactions found containing &quot;{0}&quot;.</value></data>
-  <data name="SplitAllMatch" xml:space="preserve"><value>All transactions match &quot;{0}&quot;. Please choose a more specific token.</value></data>
+  <data name="SplitGroupPreview" xml:space="preserve"><value>{0} of {1} transactions will move to the new group.</value></data>
+  <data name="SplitNoSelection" xml:space="preserve"><value>Select one or more tokens above to preview the split.</value></data>
+  <data name="SplitNoMatch" xml:space="preserve"><value>No transactions found matching &quot;{0}&quot;.</value></data>
+  <data name="SplitAllMatch" xml:space="preserve"><value>All transactions match &quot;{0}&quot;. Please choose more specific tokens.</value></data>
   <!-- Groups export -->
   <data name="ExportColStartDate" xml:space="preserve"><value>Start Date</value></data>
 </root>
