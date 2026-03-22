@@ -1012,9 +1012,10 @@ public class TransactionCategorizationStep : UserControl
 
         // Defer show by one message-pump cycle so the left-click mouse-up event
         // does not immediately dismiss the just-opened menu.
+        // Drop the menu below-left of the column's right edge so it aligns with the funnel.
         var headerRect = _groupsGrid.GetColumnDisplayRectangle(colIdx, true);
-        var showPt     = new Point(headerRect.Left, _groupsGrid.ColumnHeadersHeight);
-        BeginInvoke(() => menu.Show(_groupsGrid, showPt));
+        var showPt     = new Point(headerRect.Right, _groupsGrid.ColumnHeadersHeight);
+        BeginInvoke(() => menu.Show(_groupsGrid, showPt, ToolStripDropDownDirection.BelowLeft));
     }
 
     private void ShowColumnFilterCustom(int colIdx, string colHeader)
