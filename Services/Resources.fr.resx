@@ -211,4 +211,14 @@ Les catégories par défaut ont été restaurées.</value></data>
   <data name="DirExpense" xml:space="preserve"><value>Dépense</value></data>
   <data name="DirIncome" xml:space="preserve"><value>Revenu</value></data>
   <data name="DirMixed" xml:space="preserve"><value>Mixte</value></data>
+  <!-- Split group dialog -->
+  <data name="SplitGroupTitle" xml:space="preserve"><value>Diviser le groupe</value></data>
+  <data name="SplitGroupLabel" xml:space="preserve"><value>Groupe</value></data>
+  <data name="SplitGroupInstr" xml:space="preserve"><value>Sélectionnez un jeton à extraire dans un nouveau groupe :</value></data>
+  <data name="SplitGroupManual" xml:space="preserve"><value>Ou saisissez un jeton manuellement :</value></data>
+  <data name="SplitGroupPreview" xml:space="preserve"><value>{0} transaction(s) sur {1} correspondent à ce jeton.</value></data>
+  <data name="SplitNoMatch" xml:space="preserve"><value>Aucune transaction ne contient « {0} ».</value></data>
+  <data name="SplitAllMatch" xml:space="preserve"><value>Toutes les transactions correspondent à « {0} ». Veuillez choisir un jeton plus spécifique.</value></data>
+  <!-- Groups export -->
+  <data name="ExportColStartDate" xml:space="preserve"><value>Date de début</value></data>
 </root>

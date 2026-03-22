@@ -152,15 +152,17 @@ public class ExcelExportService
         ws.Cell(1, 4).Value = "Direction";
         ws.Cell(1, 5).Value = "Frequency";
         ws.Cell(1, 6).Value = "Total";
-        ws.Cell(1, 7).Value = "Category";
+        ws.Cell(1, 7).Value = "Start Date";
+        ws.Cell(1, 8).Value = "Category";
 
         for (int r = 0; r < groups.Count; r++)
         {
-            var g   = groups[r];
-            int row = r + 2;
-            var cat = g.CategoryId.HasValue
+            var g         = groups[r];
+            int row       = r + 2;
+            var cat       = g.CategoryId.HasValue
                 ? categories.FirstOrDefault(c => c.Id == g.CategoryId)?.Name ?? ""
                 : "";
+            var startDate = g.Transactions.Min(t => t.ExecutionDate);
 
             ws.Cell(row, 1).Value = g.Count;
             ws.Cell(row, 2).Value = g.RuleType == RuleType.IBAN ? "IBAN" : "Keyword";
@@ -168,7 +170,9 @@ public class ExcelExportService
             ws.Cell(row, 4).Value = g.DirectionLabel;
             ws.Cell(row, 5).Value = g.FrequencyLabel;
             ws.Cell(row, 6).Value = (double)g.Total;
-            ws.Cell(row, 7).Value = cat;
+            ws.Cell(row, 7).Value = startDate;
+            ws.Cell(row, 7).Style.DateFormat.Format = "dd/MM/yyyy";
+            ws.Cell(row, 8).Value = cat;
 
             // Colour by direction (matches the grid colouring)
             var bg = g.DetectedSign == AmountSign.Positive
@@ -179,7 +183,7 @@ public class ExcelExportService
 
         if (groups.Count > 0)
         {
-            var tbl = ws.Range(1, 1, groups.Count + 1, 7).CreateTable("GroupsOverview");
+            var tbl = ws.Range(1, 1, groups.Count + 1, 8).CreateTable("GroupsOverview");
             tbl.Theme = XLTableTheme.TableStyleMedium9;
         }
 

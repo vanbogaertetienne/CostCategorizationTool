@@ -198,5 +198,13 @@ internal static class Resources
     public static string FreqOccasional    => G("FreqOccasional");
     public static string DirExpense        => G("DirExpense");
     public static string DirIncome         => G("DirIncome");
-    public static string DirMixed          => G("DirMixed");
+    public static string DirMixed           => G("DirMixed");
+    public static string SplitGroupTitle    => G("SplitGroupTitle");
+    public static string SplitGroupLabel    => G("SplitGroupLabel");
+    public static string SplitGroupInstr    => G("SplitGroupInstr");
+    public static string SplitGroupManual   => G("SplitGroupManual");
+    public static string SplitGroupPreview  => G("SplitGroupPreview");
+    public static string SplitNoMatch       => G("SplitNoMatch");
+    public static string SplitAllMatch      => G("SplitAllMatch");
+    public static string ExportColStartDate => G("ExportColStartDate");
 }

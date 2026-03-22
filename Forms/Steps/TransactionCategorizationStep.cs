@@ -566,6 +566,13 @@ public class TransactionCategorizationStep : UserControl
 
         _suppressEvents = false;
         FitColumns(_groupsGrid);
+
+        // Re-trigger detail view: events were suppressed during row rebuild so the
+        // detail grid stays in sync with whatever row is now selected.
+        if (_groupsGrid.SelectedRows.Count > 0)
+            OnGroupSelectionChanged(null, EventArgs.Empty);
+        else if (_groupsGrid.Rows.Count > 0)
+            _groupsGrid.Rows[0].Selected = true;   // fires SelectionChanged → OnGroupSelectionChanged
     }
 
     private string GetGroupColumnText(TransactionGroup g, int colIdx) => colIdx switch
@@ -1116,35 +1123,62 @@ public class TransactionCategorizationStep : UserControl
         var group = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
         if (group == null || group.Count <= 1) return;
 
-        var subGroups = _grouperService.SplitGroup(group);
+        // Collect distinct tokens from transaction Details, ordered by frequency
+        var candidateTokens = group.Transactions
+            .SelectMany(t => IntelliCategorizationService.TokenizeAndClean(t.Details))
+            .GroupBy(tok => tok, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .ToList();
 
-        if (subGroups.Count <= 1)
+        using var dlg = new SplitGroupDialog(group.DisplayName, candidateTokens, group.Transactions);
+        if (dlg.ShowDialog(ParentForm) != DialogResult.OK) return;
+
+        string token = dlg.SelectedToken;
+        if (string.IsNullOrWhiteSpace(token)) return;
+
+        var matching = group.Transactions
+            .Where(t => t.Details.Contains(token, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (matching.Count == 0)
         {
-            var groupTokens = string.Join(", ",
-                IntelliCategorizationService.TokenizeAndClean(group.Pattern)
-                    .Select(t => $"\"{t}\""));
-
-            MessageBox.Show(
-                string.Format(Resources.CannotSplitMsg,
-                    group.Pattern,
-                    groupTokens.Length > 0 ? groupTokens : "(none)"),
-                Resources.CannotSplitTitle,
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(string.Format(Resources.SplitNoMatch, token),
+                Resources.CannotSplitTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        if (matching.Count == group.Count)
+        {
+            MessageBox.Show(string.Format(Resources.SplitAllMatch, token),
+                Resources.CannotSplitTitle, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
-        foreach (var sg in subGroups)
-            sg.CategoryId = group.CategoryId;
+        bool hasPos  = matching.Any(t => t.Amount > 0);
+        bool hasNeg  = matching.Any(t => t.Amount < 0);
+        AmountSign sign = hasPos && hasNeg ? AmountSign.Any
+                        : hasPos           ? AmountSign.Positive
+                                           : AmountSign.Negative;
 
+        var newGroup = new TransactionGroup
+        {
+            RuleType     = RuleType.Details,
+            Pattern      = token,
+            DisplayName  = token,
+            DetectedSign = sign,
+            Transactions = matching
+        };
+
+        // Remove matching transactions from old group (Transactions list is mutable)
+        foreach (var tx in matching)
+            group.Transactions.Remove(tx);
+
+        // Insert new group directly after the old one
         int idx = _groups.IndexOf(group);
-        _groups.RemoveAt(idx);
-        _groups.InsertRange(idx, subGroups);
+        _groups.Insert(idx + 1, newGroup);
 
         PopulateGroupsGrid();
         UpdateProgress();
-
-        if (_groupsGrid.Rows.Count > idx)
-            _groupsGrid.Rows[idx].Selected = true;
     }
 
     private void OnCombineGroups(object? sender, EventArgs e)
@@ -1335,5 +1369,109 @@ public class TransactionCategorizationStep : UserControl
         txt.SelectAll();
 
         return dlg.ShowDialog() == DialogResult.OK ? txt.Text : null;
+    }
+}
+
+// ── Split Group dialog ────────────────────────────────────────────────────────
+
+public class SplitGroupDialog : Form
+{
+    public string SelectedToken { get; private set; } = "";
+
+    public SplitGroupDialog(string groupName, List<string> tokens, List<Transaction> transactions)
+    {
+        SuspendLayout();
+        Text            = Resources.SplitGroupTitle;
+        Size            = new Size(460, 390);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        StartPosition   = FormStartPosition.CenterParent;
+        MaximizeBox     = false;
+        MinimizeBox     = false;
+
+        var lblGroup = new Label
+        {
+            Text     = $"{Resources.SplitGroupLabel}: {groupName}",
+            Font     = new Font("Segoe UI", 9f, FontStyle.Bold),
+            Location = new Point(12, 12),
+            Size     = new Size(420, 18),
+            AutoSize = false
+        };
+
+        var lblInstr = new Label
+        {
+            Text     = Resources.SplitGroupInstr,
+            Location = new Point(12, 36),
+            Size     = new Size(420, 18),
+            AutoSize = false
+        };
+
+        var listBox = new ListBox
+        {
+            Location      = new Point(12, 58),
+            Size          = new Size(420, 160),
+            SelectionMode = SelectionMode.One,
+            Font          = new Font("Consolas", 9f)
+        };
+        foreach (var t in tokens)
+            listBox.Items.Add(t);
+
+        var lblManual = new Label
+        {
+            Text     = Resources.SplitGroupManual,
+            Location = new Point(12, 228),
+            AutoSize = true
+        };
+
+        var txtToken = new TextBox
+        {
+            Location = new Point(12, 248),
+            Size     = new Size(420, 24)
+        };
+
+        var lblPreview = new Label
+        {
+            Text      = "",
+            Location  = new Point(12, 280),
+            Size      = new Size(420, 18),
+            ForeColor = Color.DimGray,
+            AutoSize  = false
+        };
+
+        void UpdatePreview()
+        {
+            string tok = txtToken.Text.Trim();
+            lblPreview.Text = string.IsNullOrEmpty(tok) ? "" :
+                string.Format(Resources.SplitGroupPreview,
+                    transactions.Count(t => t.Details.Contains(tok, StringComparison.OrdinalIgnoreCase)),
+                    transactions.Count);
+        }
+
+        listBox.SelectedIndexChanged += (_, _) =>
+        {
+            if (listBox.SelectedItem is string s) { txtToken.Text = s; txtToken.SelectAll(); }
+        };
+        txtToken.TextChanged += (_, _) => UpdatePreview();
+
+        var btnOk = new Button
+        {
+            Text         = "OK",
+            DialogResult = DialogResult.OK,
+            Location     = new Point(264, 316),
+            Size         = new Size(80, 28)
+        };
+        var btnCancel = new Button
+        {
+            Text         = Resources.Cancel,
+            DialogResult = DialogResult.Cancel,
+            Location     = new Point(352, 316),
+            Size         = new Size(80, 28)
+        };
+
+        btnOk.Click += (_, _) => { SelectedToken = txtToken.Text.Trim(); };
+
+        Controls.AddRange(new Control[] { lblGroup, lblInstr, listBox, lblManual, txtToken, lblPreview, btnOk, btnCancel });
+        AcceptButton = btnOk;
+        CancelButton = btnCancel;
+        ResumeLayout(false);
     }
 }
