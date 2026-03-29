@@ -1554,7 +1554,7 @@ public class SplitGroupDialog : Form
     {
         SuspendLayout();
         Text            = Resources.SplitGroupTitle;
-        Size            = new Size(480, 440);
+        ClientSize      = new Size(480, 440);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition   = FormStartPosition.CenterParent;
         MaximizeBox     = false;
