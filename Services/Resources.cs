@@ -124,7 +124,12 @@ internal static class Resources
     public static string ResetTxConfirmTitle => G("ResetTxConfirmTitle");
     public static string ResetTxDoneMsg       => G("ResetTxDoneMsg");
     public static string ResetTxDoneTitle     => G("ResetTxDoneTitle");
-    public static string SettFileAssoc        => G("SettFileAssoc");
+    public static string FileAssocPromptTitle  => G("FileAssocPromptTitle");
+    public static string FileAssocPromptMsg    => G("FileAssocPromptMsg");
+    public static string FileAssocPromptYes    => G("FileAssocPromptYes");
+    public static string FileAssocPromptNo     => G("FileAssocPromptNo");
+    public static string FileAssocPromptLater  => G("FileAssocPromptLater");
+    public static string SettFileAssoc         => G("SettFileAssoc");
     public static string BtnRegisterAssoc     => G("BtnRegisterAssoc");
     public static string BtnUnregisterAssoc   => G("BtnUnregisterAssoc");
     public static string FileAssocDesc        => G("FileAssocDesc");

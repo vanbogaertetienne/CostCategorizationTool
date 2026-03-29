@@ -2,6 +2,7 @@ using CostCategorizationTool.Data;
 using CostCategorizationTool.Forms.Steps;
 using CostCategorizationTool.Models;
 using CostCategorizationTool.Services;
+using static CostCategorizationTool.Services.FileAssociationHelper;
 
 namespace CostCategorizationTool.Forms;
 
@@ -230,6 +231,74 @@ public class MainForm : Form
         // Open file passed via double-click / command line
         if (startupFile != null)
             Load += (_, _) => OpenProject(startupFile);
+
+        // Prompt for file association once (unless user said No or it's already registered)
+        Shown += OnCheckFileAssociation;
+    }
+
+    private void OnCheckFileAssociation(object? sender, EventArgs e)
+    {
+        // Already registered, or user permanently declined → don't ask
+        if (_settings.FileAssocPromptDone == true) return;
+        if (FileAssociationHelper.IsRegistered())
+        {
+            _settings.FileAssocPromptDone = true;
+            _settings.Save();
+            return;
+        }
+
+        using var dlg = new Form
+        {
+            Text            = Resources.FileAssocPromptTitle,
+            ClientSize      = new Size(420, 148),
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            StartPosition   = FormStartPosition.CenterParent,
+            MaximizeBox     = false,
+            MinimizeBox     = false,
+            ShowInTaskbar   = false
+        };
+
+        var lbl = new Label
+        {
+            Text      = Resources.FileAssocPromptMsg,
+            Location  = new Point(14, 14),
+            Size      = new Size(392, 52),
+            AutoSize  = false
+        };
+
+        var btnFont = new Font("Segoe UI", 9f);
+        int bh = 32;
+        var btnYes   = new Button { Text = Resources.FileAssocPromptYes,   Font = btnFont, Size = new Size(UiScaler.BW(Resources.FileAssocPromptYes, btnFont),   bh) };
+        var btnNo    = new Button { Text = Resources.FileAssocPromptNo,    Font = btnFont, Size = new Size(UiScaler.BW(Resources.FileAssocPromptNo,    btnFont),   bh) };
+        var btnLater = new Button { Text = Resources.FileAssocPromptLater, Font = btnFont, Size = new Size(UiScaler.BW(Resources.FileAssocPromptLater, btnFont), bh) };
+
+        // Right-align the three buttons
+        int margin = 10, right = 406;
+        btnLater.Location = new Point(right - btnLater.Width, 100);
+        btnNo.Location    = new Point(btnLater.Left - margin - btnNo.Width, 100);
+        btnYes.Location   = new Point(btnNo.Left - margin - btnYes.Width, 100);
+
+        btnYes.Click   += (_, _) => dlg.DialogResult = DialogResult.Yes;
+        btnNo.Click    += (_, _) => dlg.DialogResult = DialogResult.No;
+        btnLater.Click += (_, _) => dlg.DialogResult = DialogResult.Cancel;
+        dlg.CancelButton = btnLater;
+
+        dlg.Controls.AddRange(new Control[] { lbl, btnYes, btnNo, btnLater });
+
+        var result = dlg.ShowDialog(this);
+        if (result == DialogResult.Yes)
+        {
+            FileAssociationHelper.Register();
+            _settings.FileAssocPromptDone = true;
+            _settings.Save();
+        }
+        else if (result == DialogResult.No)
+        {
+            // Permanently suppress
+            _settings.FileAssocPromptDone = true;
+            _settings.Save();
+        }
+        // DialogResult.Cancel (Ask me next time) → don't save, will ask again next launch
     }
 
     private static Button MakeStepButton(string text, bool active)

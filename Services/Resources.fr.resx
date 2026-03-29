@@ -136,6 +136,11 @@ Les catégories par défaut ont été restaurées.</value></data>
   <data name="ResetTxConfirmTitle" xml:space="preserve"><value>Réinitialiser les transactions</value></data>
   <data name="ResetTxDoneMsg" xml:space="preserve"><value>Les transactions ont été effacées.</value></data>
   <data name="ResetTxDoneTitle" xml:space="preserve"><value>Transactions effacées</value></data>
+  <data name="FileAssocPromptTitle" xml:space="preserve"><value>Ouvrir les fichiers .ccp avec cette appli ?</value></data>
+  <data name="FileAssocPromptMsg" xml:space="preserve"><value>Souhaitez-vous que les fichiers projet .ccp s'ouvrent automatiquement dans Cost Categorization Tool lors d'un double-clic dans l'Explorateur Windows ?</value></data>
+  <data name="FileAssocPromptYes" xml:space="preserve"><value>Oui, associer</value></data>
+  <data name="FileAssocPromptNo" xml:space="preserve"><value>Non</value></data>
+  <data name="FileAssocPromptLater" xml:space="preserve"><value>Me redemander</value></data>
   <data name="SettFileAssoc" xml:space="preserve"><value>Association de fichiers</value></data>
   <data name="BtnRegisterAssoc" xml:space="preserve"><value>Associer les fichiers .ccp</value></data>
   <data name="BtnUnregisterAssoc" xml:space="preserve"><value>Désassocier les fichiers .ccp</value></data>

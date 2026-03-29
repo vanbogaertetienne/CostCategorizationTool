@@ -136,6 +136,11 @@ Are you sure?</value></data>
   <data name="ResetTxConfirmTitle" xml:space="preserve"><value>Reset Transactions</value></data>
   <data name="ResetTxDoneMsg" xml:space="preserve"><value>Transactions have been cleared.</value></data>
   <data name="ResetTxDoneTitle" xml:space="preserve"><value>Transactions Cleared</value></data>
+  <data name="FileAssocPromptTitle" xml:space="preserve"><value>Open .ccp files with this app?</value></data>
+  <data name="FileAssocPromptMsg" xml:space="preserve"><value>Would you like .ccp project files to open automatically in Cost Categorization Tool when double-clicked in Windows Explorer?</value></data>
+  <data name="FileAssocPromptYes" xml:space="preserve"><value>Yes, register</value></data>
+  <data name="FileAssocPromptNo" xml:space="preserve"><value>No</value></data>
+  <data name="FileAssocPromptLater" xml:space="preserve"><value>Ask me next time</value></data>
   <data name="SettFileAssoc" xml:space="preserve"><value>File Association</value></data>
   <data name="BtnRegisterAssoc" xml:space="preserve"><value>Register .ccp file type</value></data>
   <data name="BtnUnregisterAssoc" xml:space="preserve"><value>Unregister .ccp file type</value></data>

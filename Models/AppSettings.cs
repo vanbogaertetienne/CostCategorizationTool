@@ -6,6 +6,10 @@ public class AppSettings
 {
     public List<string> RecentProjects { get; set; } = new();
     public string? Language { get; set; } = null;
+    /// <summary>
+    /// null = never asked, false = user said "no / ask next time", true = registered (don't ask again)
+    /// </summary>
+    public bool? FileAssocPromptDone { get; set; } = null;
 
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
