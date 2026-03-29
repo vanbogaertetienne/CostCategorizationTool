@@ -427,6 +427,8 @@ public class TransactionCategorizationStep : UserControl
     /// <summary>Returns groups for the active date range, with CategoryId derived from their transactions.</summary>
     public List<TransactionGroup> GetFilteredGroups()
     {
+        // Filter each group's transactions by date rather than re-grouping, so
+        // manual splits (stored in _groups) are preserved in the export/summary.
         List<TransactionGroup> groups;
         if (!_dateFrom.HasValue && !_dateTo.HasValue)
         {
@@ -434,11 +436,31 @@ public class TransactionCategorizationStep : UserControl
         }
         else
         {
-            groups = _grouperService.Group(GetFilteredTransactions());
+            groups = _groups
+                .Select(g =>
+                {
+                    var txs = g.Transactions.Where(t =>
+                        (!_dateFrom.HasValue || t.ExecutionDate >= _dateFrom.Value) &&
+                        (!_dateTo.HasValue   || t.ExecutionDate <= _dateTo.Value))
+                        .ToList();
+                    if (txs.Count == 0) return null;
+                    if (txs.Count == g.Transactions.Count) return g;
+                    return new TransactionGroup
+                    {
+                        RuleType     = g.RuleType,
+                        Pattern      = g.Pattern,
+                        DisplayName  = g.DisplayName,
+                        DetectedSign = g.DetectedSign,
+                        CategoryId   = g.CategoryId,
+                        Transactions = txs
+                    };
+                })
+                .OfType<TransactionGroup>()
+                .ToList();
         }
 
-        // Derive CategoryId from transactions — this is the ground truth regardless of
-        // whether categorisation happened while a date filter was or wasn't active.
+        // Derive CategoryId from transactions — ground truth regardless of when
+        // categorisation happened relative to the active date filter.
         foreach (var g in groups)
         {
             g.CategoryId = g.Transactions
@@ -561,28 +583,32 @@ public class TransactionCategorizationStep : UserControl
         _suppressEvents = true;
         _groupsGrid.Rows.Clear();
 
-        // Step 1: Date filter — regroup from filtered transactions
+        // Step 1: Date filter — filter each group's transactions in place so that
+        // manual splits (which modify _groups directly) are preserved.
         List<TransactionGroup> baseGroups;
         if (_dateFrom.HasValue || _dateTo.HasValue)
         {
-            var filteredTxs = _transactions.Where(t =>
-                (!_dateFrom.HasValue || t.ExecutionDate >= _dateFrom.Value) &&
-                (!_dateTo.HasValue   || t.ExecutionDate <= _dateTo.Value))
+            baseGroups = _groups
+                .Select(g =>
+                {
+                    var txs = g.Transactions.Where(t =>
+                        (!_dateFrom.HasValue || t.ExecutionDate >= _dateFrom.Value) &&
+                        (!_dateTo.HasValue   || t.ExecutionDate <= _dateTo.Value))
+                        .ToList();
+                    if (txs.Count == 0) return null;
+                    if (txs.Count == g.Transactions.Count) return g;
+                    return new TransactionGroup
+                    {
+                        RuleType     = g.RuleType,
+                        Pattern      = g.Pattern,
+                        DisplayName  = g.DisplayName,
+                        DetectedSign = g.DetectedSign,
+                        CategoryId   = g.CategoryId,
+                        Transactions = txs
+                    };
+                })
+                .OfType<TransactionGroup>()
                 .ToList();
-
-            baseGroups = _grouperService.Group(filteredTxs);
-
-            // Re-apply categories to filtered groups by matching Pattern + RuleType.
-            // Use assignment-loop instead of ToDictionary to silently handle duplicate keys
-            // (same pattern can appear with different DetectedSign in _groups).
-            var categoryLookup = new Dictionary<(string, RuleType), int?>();
-            foreach (var g in _groups.Where(g => g.CategoryId.HasValue))
-                categoryLookup[(g.Pattern, g.RuleType)] = g.CategoryId;
-            foreach (var g in baseGroups)
-            {
-                if (categoryLookup.TryGetValue((g.Pattern, g.RuleType), out var catId))
-                    g.CategoryId = catId;
-            }
         }
         else
         {
