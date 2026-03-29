@@ -1418,7 +1418,8 @@ public class TransactionCategorizationStep : UserControl
         var selectedGroups = _groupsGrid.Rows
             .Cast<DataGridViewRow>()
             .Where(r => r.Selected && r.Tag is TransactionGroup)
-            .Select(r => (TransactionGroup)r.Tag!)
+            .Select(r => FullGroup((TransactionGroup)r.Tag!))
+            .Distinct()
             .ToList();
 
         if (selectedGroups.Count < 2) return;
