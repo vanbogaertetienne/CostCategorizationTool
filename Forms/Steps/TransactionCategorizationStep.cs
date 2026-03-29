@@ -1102,28 +1102,17 @@ public class TransactionCategorizationStep : UserControl
             if (!string.IsNullOrWhiteSpace(newName))
             {
                 _db.AddCategory(newName.Trim());
-                ReloadCategories();
-                // Now set the newly created category
-                var newCat = _categories.FirstOrDefault(c => c.Name == newName.Trim());
+                // Resolve the new category ID before ReloadCategories so that
+                // RefreshGroupCategoryColumn (called inside it) already sees the correct value.
+                var newCat = _db.GetCategories().FirstOrDefault(c => c.Name == newName.Trim());
                 if (newCat != null)
                 {
-                    _suppressEvents = true;
-                    row.Cells[ColCategory].Value = newCat.Name;
-                    _suppressEvents = false;
                     group.CategoryId = newCat.Id;
                     foreach (var tx in group.Transactions) tx.CategoryId = newCat.Id;
                     _db.SaveTransactionCategories(group.Transactions);
                     _db.AddAutoRule(newCat.Id, group.RuleType, group.Pattern, group.DetectedSign);
-                    RefreshGroupCategoryColumn();
                 }
-                else
-                {
-                    _suppressEvents = true;
-                    row.Cells[ColCategory].Value = group.CategoryId.HasValue
-                        ? _categories.FirstOrDefault(c => c.Id == group.CategoryId)?.Name ?? ""
-                        : "";
-                    _suppressEvents = false;
-                }
+                ReloadCategories();
             }
             else
             {
@@ -1205,24 +1194,13 @@ public class TransactionCategorizationStep : UserControl
             if (!string.IsNullOrWhiteSpace(newName))
             {
                 _db.AddCategory(newName.Trim());
-                ReloadCategories();
-                var newCat = _categories.FirstOrDefault(c => c.Name == newName.Trim());
+                var newCat = _db.GetCategories().FirstOrDefault(c => c.Name == newName.Trim());
                 if (newCat != null)
                 {
                     tx.CategoryId = newCat.Id;
-                    _suppressEvents = true;
-                    row.Cells[DColCategory].Value = newCat.Name;
-                    _suppressEvents = false;
+                    _db.SaveTransactionCategories([tx]);
                 }
-                else
-                {
-                    _suppressEvents = true;
-                    row.Cells[DColCategory].Value = tx.CategoryId.HasValue
-                        ? _categories.FirstOrDefault(c => c.Id == tx.CategoryId)?.Name ?? ""
-                        : "";
-                    _suppressEvents = false;
-                    return;
-                }
+                ReloadCategories();
             }
             else
             {
