@@ -1094,6 +1094,33 @@ public class TransactionCategorizationStep : UserControl
             _groupsGrid.InvalidateCell(_groupsGrid.Columns[colIdx].HeaderCell);
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the full (unfiltered) group from _groups that corresponds to
+    /// <paramref name="viewGroup"/> (which may be a date-filtered projection).
+    /// </summary>
+    private TransactionGroup FullGroup(TransactionGroup viewGroup) =>
+        _groups.FirstOrDefault(g => ReferenceEquals(g, viewGroup))
+        ?? _groups.FirstOrDefault(g => g.Pattern == viewGroup.Pattern && g.RuleType == viewGroup.RuleType)
+        ?? viewGroup;
+
+    /// <summary>
+    /// After setting a category on <paramref name="viewGroup"/> (which may only
+    /// contain in-range transactions), also propagate the same category to
+    /// the full group's out-of-range transactions so the filter doesn't hide changes.
+    /// </summary>
+    private void PropagateToFullGroup(TransactionGroup viewGroup, int? categoryId)
+    {
+        var full = FullGroup(viewGroup);
+        if (ReferenceEquals(full, viewGroup)) return; // already the full group
+        full.CategoryId = categoryId;
+        var outOfRange = full.Transactions.Except(viewGroup.Transactions).ToList();
+        if (outOfRange.Count == 0) return;
+        foreach (var tx in outOfRange) tx.CategoryId = categoryId;
+        _db.SaveTransactionCategories(outOfRange);
+    }
+
     // ── Category mapping ─────────────────────────────────────────────────────
 
     private void MapCategoriesToGroups()
@@ -1137,6 +1164,7 @@ public class TransactionCategorizationStep : UserControl
                     foreach (var tx in group.Transactions) tx.CategoryId = newCat.Id;
                     _db.SaveTransactionCategories(group.Transactions);
                     _db.AddAutoRule(newCat.Id, group.RuleType, group.Pattern, group.DetectedSign);
+                    PropagateToFullGroup(group, newCat.Id);
                 }
                 ReloadCategories();
             }
@@ -1157,6 +1185,7 @@ public class TransactionCategorizationStep : UserControl
             group.CategoryId = null;
             foreach (var tx in group.Transactions) tx.CategoryId = null;
             _db.SaveTransactionCategories(group.Transactions);
+            PropagateToFullGroup(group, null);
             UpdateProgress();
             return;
         }
@@ -1169,6 +1198,7 @@ public class TransactionCategorizationStep : UserControl
 
         _db.SaveTransactionCategories(group.Transactions);
         _db.AddAutoRule(cat.Id, group.RuleType, group.Pattern, group.DetectedSign);
+        PropagateToFullGroup(group, cat.Id);
 
         RefreshGroupCategoryColumn();
     }
@@ -1281,8 +1311,10 @@ public class TransactionCategorizationStep : UserControl
     private void OnSplitGroup(object? sender, EventArgs e)
     {
         if (_groupsGrid.SelectedRows.Count == 0) return;
-        var group = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
-        if (group == null || group.Count <= 1) return;
+        var viewGroup = _groupsGrid.SelectedRows[0].Tag as TransactionGroup;
+        if (viewGroup == null || viewGroup.Count <= 1) return;
+        // Always split on the full (unfiltered) group so out-of-range transactions move too.
+        var group = FullGroup(viewGroup);
 
         // Collect distinct tokens from transaction Details, ordered by frequency
         var candidateTokens = group.Transactions
