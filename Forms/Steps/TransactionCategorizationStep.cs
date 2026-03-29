@@ -1475,7 +1475,7 @@ public class TransactionCategorizationStep : UserControl
         using var dlg = new Form
         {
             Text            = title,
-            Size            = new Size(380, 150),
+            ClientSize      = new Size(380, 115),
             FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition   = FormStartPosition.CenterParent,
             MaximizeBox     = false,
