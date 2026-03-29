@@ -8,7 +8,7 @@ namespace CostCategorizationTool;
 static class Program
 {
     [STAThread]
-    static void Main()
+    static void Main(string[] args)
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         ApplicationConfiguration.Initialize();
@@ -22,6 +22,9 @@ static class Program
         }
         Thread.CurrentThread.CurrentUICulture = new CultureInfo(lang);
 
-        Application.Run(new MainForm());
+        // When launched by double-clicking a .ccp file, Windows passes the file
+        // path as the first command-line argument.
+        string? startupFile = args.Length > 0 && File.Exists(args[0]) ? args[0] : null;
+        Application.Run(new MainForm(startupFile));
     }
 }

@@ -2,6 +2,7 @@ using System.Globalization;
 using CostCategorizationTool.Data;
 using CostCategorizationTool.Models;
 using CostCategorizationTool.Services;
+using Microsoft.Win32;
 
 namespace CostCategorizationTool.Forms;
 
@@ -26,7 +27,7 @@ public class SettingsDialog : Form
         var btnF = new Font("Segoe UI", 10f);
 
         Text            = Resources.SettTitle;
-        ClientSize      = new Size(500, 430);
+        ClientSize      = new Size(500, 560);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition   = FormStartPosition.CenterParent;
         MaximizeBox     = false;
@@ -134,17 +135,67 @@ public class SettingsDialog : Form
             btnResetDb, lblResetDb, separator, btnResetTx, lblResetTx
         });
 
+        // ── File Association section ─────────────────────────────────────────
+        var grpFileAssoc = new GroupBox
+        {
+            Text     = Resources.SettFileAssoc,
+            Location = new Point(14, 380),
+            Size     = new Size(472, 148),
+            Font     = new Font("Segoe UI", 10f, FontStyle.Bold)
+        };
+
+        bool isRegistered = FileAssociationHelper.IsRegistered();
+        var btnRegister = new Button
+        {
+            Text     = Resources.BtnRegisterAssoc,
+            Size     = new Size(UiScaler.BW(Resources.BtnRegisterAssoc, btnF), 36),
+            Location = new Point(12, 28),
+            Font     = btnF
+        };
+        var btnUnregister = new Button
+        {
+            Text      = Resources.BtnUnregisterAssoc,
+            Size      = new Size(UiScaler.BW(Resources.BtnUnregisterAssoc, btnF), 36),
+            Location  = new Point(btnRegister.Right + 10, 28),
+            ForeColor = Color.DarkRed,
+            Font      = btnF
+        };
+        var lblFileAssoc = new Label
+        {
+            Text      = Resources.FileAssocDesc,
+            AutoSize  = false,
+            Size      = new Size(448, 46),
+            Location  = new Point(12, 74),
+            Font      = new Font("Segoe UI", 8.5f),
+            ForeColor = Color.FromArgb(80, 80, 80)
+        };
+
+        btnRegister.Click += (_, _) =>
+        {
+            FileAssociationHelper.Register();
+            MessageBox.Show(Resources.FileAssocDone, Resources.FileAssocDoneTitle,
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        };
+        btnUnregister.Click += (_, _) =>
+        {
+            FileAssociationHelper.Unregister();
+            MessageBox.Show(Resources.FileAssocRemoved, Resources.FileAssocRemovedTitle,
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        };
+
+        grpFileAssoc.Controls.AddRange(new Control[] { btnRegister, btnUnregister, lblFileAssoc });
+
         int closeW = UiScaler.BW(Resources.Close, btnF);
         var btnClose = new Button
         {
             Text         = Resources.Close,
             DialogResult = DialogResult.OK,
             Size         = new Size(closeW, 36),
-            Location     = new Point(500 - 14 - closeW, 388),
+            Location     = new Point(500 - 14 - closeW, 518),
             Font         = btnF
         };
 
-        Controls.AddRange(new Control[] { grpLanguage, grpMaintenance, btnClose });
+        Controls.AddRange(new Control[] { grpLanguage, grpMaintenance, grpFileAssoc, btnClose });
         AcceptButton = btnClose;
         CancelButton = btnClose;
         ResumeLayout(false);

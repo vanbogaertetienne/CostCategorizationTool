@@ -136,6 +136,14 @@ Are you sure?</value></data>
   <data name="ResetTxConfirmTitle" xml:space="preserve"><value>Reset Transactions</value></data>
   <data name="ResetTxDoneMsg" xml:space="preserve"><value>Transactions have been cleared.</value></data>
   <data name="ResetTxDoneTitle" xml:space="preserve"><value>Transactions Cleared</value></data>
+  <data name="SettFileAssoc" xml:space="preserve"><value>File Association</value></data>
+  <data name="BtnRegisterAssoc" xml:space="preserve"><value>Register .ccp file type</value></data>
+  <data name="BtnUnregisterAssoc" xml:space="preserve"><value>Unregister .ccp file type</value></data>
+  <data name="FileAssocDesc" xml:space="preserve"><value>Register .ccp files so they open in Cost Categorization Tool when double-clicked in Windows Explorer.</value></data>
+  <data name="FileAssocDone" xml:space="preserve"><value>.ccp files are now associated with Cost Categorization Tool.</value></data>
+  <data name="FileAssocDoneTitle" xml:space="preserve"><value>File Association Registered</value></data>
+  <data name="FileAssocRemoved" xml:space="preserve"><value>.ccp file association has been removed.</value></data>
+  <data name="FileAssocRemovedTitle" xml:space="preserve"><value>File Association Removed</value></data>
 
   <!-- CategoryManagementStep -->
   <data name="CatDesc" xml:space="preserve"><value>Manage expense categories. You can add, rename, or delete categories.</value></data>

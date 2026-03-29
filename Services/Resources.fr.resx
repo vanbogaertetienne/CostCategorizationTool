@@ -136,6 +136,14 @@ Les catégories par défaut ont été restaurées.</value></data>
   <data name="ResetTxConfirmTitle" xml:space="preserve"><value>Réinitialiser les transactions</value></data>
   <data name="ResetTxDoneMsg" xml:space="preserve"><value>Les transactions ont été effacées.</value></data>
   <data name="ResetTxDoneTitle" xml:space="preserve"><value>Transactions effacées</value></data>
+  <data name="SettFileAssoc" xml:space="preserve"><value>Association de fichiers</value></data>
+  <data name="BtnRegisterAssoc" xml:space="preserve"><value>Associer les fichiers .ccp</value></data>
+  <data name="BtnUnregisterAssoc" xml:space="preserve"><value>Désassocier les fichiers .ccp</value></data>
+  <data name="FileAssocDesc" xml:space="preserve"><value>Associez les fichiers .ccp afin qu'ils s'ouvrent dans Cost Categorization Tool lors d'un double-clic dans l'Explorateur Windows.</value></data>
+  <data name="FileAssocDone" xml:space="preserve"><value>Les fichiers .ccp sont désormais associés à Cost Categorization Tool.</value></data>
+  <data name="FileAssocDoneTitle" xml:space="preserve"><value>Association enregistrée</value></data>
+  <data name="FileAssocRemoved" xml:space="preserve"><value>L'association des fichiers .ccp a été supprimée.</value></data>
+  <data name="FileAssocRemovedTitle" xml:space="preserve"><value>Association supprimée</value></data>
 
   <!-- CategoryManagementStep -->
   <data name="CatDesc" xml:space="preserve"><value>Gérez vos catégories de dépenses. Vous pouvez ajouter, renommer ou supprimer des catégories.</value></data>

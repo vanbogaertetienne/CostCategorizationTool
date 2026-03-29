@@ -36,7 +36,7 @@ public class MainForm : Form
     private readonly ToolStripMenuItem _miViewIncoming;
     private readonly ToolStripMenuItem _miViewOutgoing;
 
-    public MainForm()
+    public MainForm(string? startupFile = null)
     {
         _settings = AppSettings.Load();
 
@@ -226,6 +226,10 @@ public class MainForm : Form
         ResumeLayout(false);
 
         RefreshRecentMenu();
+
+        // Open file passed via double-click / command line
+        if (startupFile != null)
+            Load += (_, _) => OpenProject(startupFile);
     }
 
     private static Button MakeStepButton(string text, bool active)
