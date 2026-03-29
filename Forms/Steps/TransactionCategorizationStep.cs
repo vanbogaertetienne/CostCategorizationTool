@@ -1136,6 +1136,7 @@ public class TransactionCategorizationStep : UserControl
 
     private void MapCategoriesToGroups()
     {
+        var toHeal = new List<Transaction>();
         foreach (var group in _groups)
         {
             group.CategoryId = group.Transactions
@@ -1143,7 +1144,19 @@ public class TransactionCategorizationStep : UserControl
                 .GroupBy(t => t.CategoryId!.Value)
                 .OrderByDescending(g => g.Count())
                 .FirstOrDefault()?.Key;
+
+            // Heal transactions whose CategoryId is null even though the group
+            // has a resolved category — this fixes projects saved before the
+            // date-filter propagation bug was corrected.
+            if (group.CategoryId.HasValue)
+            {
+                var nullTxs = group.Transactions.Where(t => !t.CategoryId.HasValue).ToList();
+                foreach (var tx in nullTxs) tx.CategoryId = group.CategoryId;
+                toHeal.AddRange(nullTxs);
+            }
         }
+        if (toHeal.Count > 0)
+            _db.SaveTransactionCategories(toHeal);
     }
 
     // ── Events ───────────────────────────────────────────────────────────────
