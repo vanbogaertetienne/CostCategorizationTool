@@ -21,6 +21,7 @@ public class CategoryManagementDialog : Form
         MinimumSize     = new Size(700, 480);
         StartPosition   = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.Sizable;
+        ShowInTaskbar   = false;
         Font            = new Font("Segoe UI", 9.5f);
 
         var step = new CategoryManagementStep(db) { Dock = DockStyle.Fill };

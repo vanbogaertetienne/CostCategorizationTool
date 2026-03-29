@@ -197,7 +197,7 @@ public class SummaryStep : UserControl
             FileName   = $"CostCategorization_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
             DefaultExt = "xlsx"
         };
-        if (dlg.ShowDialog() != DialogResult.OK) return;
+        if (dlg.ShowDialog(FindForm()) != DialogResult.OK) return;
 
         try
         {
@@ -222,7 +222,7 @@ public class SummaryStep : UserControl
             FileName         = $"CostSummary_{DateTime.Now:yyyyMMdd_HHmm}.csv",
             DefaultExt       = "csv"
         };
-        if (dlg.ShowDialog() != DialogResult.OK) return;
+        if (dlg.ShowDialog(FindForm()) != DialogResult.OK) return;
 
         try
         {

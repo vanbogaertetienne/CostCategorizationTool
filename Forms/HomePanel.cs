@@ -131,7 +131,7 @@ public class HomePanel : UserControl
             DefaultExt = "ccp",
             FileName   = "MyProject.ccp"
         };
-        if (dlg.ShowDialog() != DialogResult.OK) return;
+        if (dlg.ShowDialog(FindForm()) != DialogResult.OK) return;
 
         // Delete existing file so the DB is created fresh
         if (File.Exists(dlg.FileName))
@@ -147,7 +147,7 @@ public class HomePanel : UserControl
             Title  = Resources.OpenProjectTitle,
             Filter = Resources.ProjectFilter
         };
-        if (dlg.ShowDialog() != DialogResult.OK) return;
+        if (dlg.ShowDialog(FindForm()) != DialogResult.OK) return;
         ProjectRequested?.Invoke(this, dlg.FileName);
     }
 

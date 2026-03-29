@@ -255,7 +255,7 @@ public class CategoryManagementStep : UserControl
 
     private void OnAddCategory(object? sender, EventArgs e)
     {
-        var name = ShowInputDialog(Resources.NewCatName, Resources.AddCatTitle, "");
+        var name = ShowInputDialog(Resources.NewCatName, Resources.AddCatTitle, "", FindForm());
         if (string.IsNullOrWhiteSpace(name)) return;
         _db.AddCategory(name);
         RefreshData();
@@ -264,7 +264,7 @@ public class CategoryManagementStep : UserControl
     private void OnRenameCategory(object? sender, EventArgs e)
     {
         if (SelectedCategory == null) { MessageBox.Show(Resources.SelectCatFirst); return; }
-        var name = ShowInputDialog(Resources.NewNameLbl, Resources.RenameCatTitle, SelectedCategory.Name);
+        var name = ShowInputDialog(Resources.NewNameLbl, Resources.RenameCatTitle, SelectedCategory.Name, FindForm());
         if (string.IsNullOrWhiteSpace(name)) return;
         _db.UpdateCategory(SelectedCategory.Id, name);
         RefreshData();
@@ -309,16 +309,17 @@ public class CategoryManagementStep : UserControl
 
     // ── Simple input dialog ──────────────────────────────────────────────────
 
-    private static string ShowInputDialog(string prompt, string title, string defaultValue)
+    private static string ShowInputDialog(string prompt, string title, string defaultValue, IWin32Window? owner = null)
     {
         using var form = new Form
         {
             Text            = title,
-            Size            = new Size(380, 150),
+            ClientSize      = new Size(380, 115),
             FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition   = FormStartPosition.CenterParent,
             MaximizeBox     = false,
-            MinimizeBox     = false
+            MinimizeBox     = false,
+            ShowInTaskbar   = false
         };
         var lbl = new Label { Text = prompt, AutoSize = true, Location = new Point(12, 12) };
         var txt = new TextBox { Location = new Point(12, 36), Width = 340, Text = defaultValue };
@@ -331,7 +332,7 @@ public class CategoryManagementStep : UserControl
         form.Controls.AddRange(new Control[] { lbl, txt, ok, cancel });
         form.AcceptButton = ok;
         form.CancelButton = cancel;
-        return form.ShowDialog() == DialogResult.OK ? txt.Text.Trim() : "";
+        return form.ShowDialog(owner) == DialogResult.OK ? txt.Text.Trim() : "";
     }
 }
 
@@ -358,11 +359,12 @@ public class AddRuleDialog : Form
     {
         SuspendLayout();
         Text            = Resources.AddRuleTitle;
-        Size            = new Size(420, 270);
+        ClientSize      = new Size(420, 240);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         StartPosition   = FormStartPosition.CenterParent;
         MaximizeBox     = false;
         MinimizeBox     = false;
+        ShowInTaskbar   = false;
 
         var typeLabel = new Label { Text = Resources.RuleTypeLbl, AutoSize = true, Location = new Point(12, 14) };
         _rbIban    = new RadioButton { Text = Resources.RbIban,    Location = new Point(12, 36), AutoSize = true, Checked = true };

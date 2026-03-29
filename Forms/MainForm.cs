@@ -349,7 +349,7 @@ public class MainForm : Form
             Title  = "Select bank CSV export file",
             Filter = Resources.CsvFilter
         };
-        if (dlg.ShowDialog() != DialogResult.OK) return;
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
         try
         {
@@ -382,7 +382,8 @@ public class MainForm : Form
             Size            = new Size(900, 680),
             MinimumSize     = new Size(600, 400),
             StartPosition   = FormStartPosition.CenterParent,
-            FormBorderStyle = FormBorderStyle.Sizable
+            FormBorderStyle = FormBorderStyle.Sizable,
+            ShowInTaskbar   = false
         };
         var step = new SummaryStep { Dock = DockStyle.Fill };
         form.Controls.Add(step);

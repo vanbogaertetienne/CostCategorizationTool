@@ -32,6 +32,7 @@ public class SettingsDialog : Form
         StartPosition   = FormStartPosition.CenterParent;
         MaximizeBox     = false;
         MinimizeBox     = false;
+        ShowInTaskbar   = false;
         Font            = new Font("Segoe UI", 10f);
 
         // ── Language section ─────────────────────────────────────────────────

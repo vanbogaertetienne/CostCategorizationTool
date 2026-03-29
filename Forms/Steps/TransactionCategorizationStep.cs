@@ -1528,7 +1528,7 @@ public class TransactionCategorizationStep : UserControl
 
     // ── Input dialog helper ───────────────────────────────────────────────────
 
-    private static string? ShowInputDialog(string title, string prompt, string defaultValue)
+    private string? ShowInputDialog(string title, string prompt, string defaultValue)
     {
         using var dlg = new Form
         {
@@ -1537,7 +1537,8 @@ public class TransactionCategorizationStep : UserControl
             FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition   = FormStartPosition.CenterParent,
             MaximizeBox     = false,
-            MinimizeBox     = false
+            MinimizeBox     = false,
+            ShowInTaskbar   = false
         };
 
         var lbl = new Label
@@ -1576,7 +1577,7 @@ public class TransactionCategorizationStep : UserControl
 
         txt.SelectAll();
 
-        return dlg.ShowDialog() == DialogResult.OK ? txt.Text : null;
+        return dlg.ShowDialog(ParentForm) == DialogResult.OK ? txt.Text : null;
     }
 }
 
@@ -1595,6 +1596,7 @@ public class SplitGroupDialog : Form
         StartPosition   = FormStartPosition.CenterParent;
         MaximizeBox     = false;
         MinimizeBox     = false;
+        ShowInTaskbar   = false;
 
         var lblGroup = new Label
         {
