@@ -8,6 +8,7 @@
     <RootNamespace>CostCategorizationTool</RootNamespace>
     <AssemblyName>CostCategorizationTool</AssemblyName>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
