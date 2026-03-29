@@ -46,6 +46,7 @@ public class MainForm : Form
         AutoScaleMode       = AutoScaleMode.Dpi;
 
         Text            = Resources.AppTitle;
+        Icon            = AppIcon.Get();
         Size            = new Size(1050, 760);
         MinimumSize     = new Size(800, 600);
         StartPosition   = FormStartPosition.CenterScreen;
