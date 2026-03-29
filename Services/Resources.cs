@@ -124,6 +124,17 @@ internal static class Resources
     public static string ResetTxConfirmTitle => G("ResetTxConfirmTitle");
     public static string ResetTxDoneMsg       => G("ResetTxDoneMsg");
     public static string ResetTxDoneTitle     => G("ResetTxDoneTitle");
+    // ── BulkAssignDialog ─────────────────────────────────────────────────────
+    public static string BtnBulkAssign          => G("BtnBulkAssign");
+    public static string BulkAssignTitle        => G("BulkAssignTitle");
+    public static string BulkAssignCategoryLabel => G("BulkAssignCategoryLabel");
+    public static string BulkAssignPasteLabel   => G("BulkAssignPasteLabel");
+    public static string BulkAssignPreviewNone  => G("BulkAssignPreviewNone");
+    public static string BulkAssignPreview      => G("BulkAssignPreview");
+    public static string BulkAssignApply        => G("BulkAssignApply");
+    public static string BulkAssignDone         => G("BulkAssignDone");
+    public static string BulkAssignDoneTitle    => G("BulkAssignDoneTitle");
+
     public static string FileAssocPromptTitle  => G("FileAssocPromptTitle");
     public static string FileAssocPromptMsg    => G("FileAssocPromptMsg");
     public static string FileAssocPromptYes    => G("FileAssocPromptYes");

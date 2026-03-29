@@ -55,6 +55,7 @@ public class TransactionCategorizationStep : UserControl
     // ── Controls ─────────────────────────────────────────────────────────────
     private readonly Button       _btnAutoCateg;
     private readonly Button       _btnManageCats;
+    private readonly Button       _btnBulkAssign;
     private readonly Button       _btnSplit;
     private readonly Label        _lblProgress;
     private readonly DataGridView _groupsGrid;
@@ -102,6 +103,15 @@ public class TransactionCategorizationStep : UserControl
         };
         bx += _btnManageCats.Width + 8;
 
+        _btnBulkAssign = new Button
+        {
+            Text     = Resources.BtnBulkAssign,
+            Size     = new Size(BW(Resources.BtnBulkAssign, btnFont), bh),
+            Location = new Point(bx, by),
+            Font     = btnFont
+        };
+        bx += _btnBulkAssign.Width + 8;
+
         _btnSplit = new Button
         {
             Text     = Resources.BtnSplitGroup,
@@ -145,7 +155,7 @@ public class TransactionCategorizationStep : UserControl
         topBar.Resize += (_, _) => layoutTopBar();
         Resize         += (_, _) => layoutTopBar();
 
-        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnSplit });
+        topBar.Controls.AddRange(new Control[] { _btnAutoCateg, _btnManageCats, _btnBulkAssign, _btnSplit });
 
         // ── Date filter bar ───────────────────────────────────────────────────
         var filterBar = new Panel
@@ -340,9 +350,10 @@ public class TransactionCategorizationStep : UserControl
                 e.Graphics.FillEllipse(brush, cx + i - 2, cy - 2, 4, 4);
         };
 
-        _btnAutoCateg.Click  += OnAutoCateg;
-        _btnManageCats.Click += OnManageCategories;
-        _btnSplit.Click      += OnSplitGroup;
+        _btnAutoCateg.Click    += OnAutoCateg;
+        _btnManageCats.Click   += OnManageCategories;
+        _btnBulkAssign.Click   += OnBulkAssign;
+        _btnSplit.Click        += OnSplitGroup;
 
         Controls.Add(split);
         Controls.Add(filterBar);
@@ -1491,6 +1502,32 @@ public class TransactionCategorizationStep : UserControl
         RefreshGroupCategoryColumn();
     }
 
+    private void OnBulkAssign(object? sender, EventArgs e)
+    {
+        using var dlg = new BulkAssignDialog(_categories, _groups);
+        if (dlg.ShowDialog(ParentForm) != DialogResult.OK) return;
+
+        var (categoryId, matched) = dlg.Result;
+        var cat = _categories.FirstOrDefault(c => c.Id == categoryId);
+        if (cat == null || matched.Count == 0) return;
+
+        foreach (var group in matched)
+        {
+            group.CategoryId = cat.Id;
+            foreach (var tx in group.Transactions) tx.CategoryId = cat.Id;
+            _db.SaveTransactionCategories(group.Transactions);
+            _db.AddAutoRule(cat.Id, group.RuleType, group.Pattern, group.DetectedSign);
+            PropagateToFullGroup(group, cat.Id);
+        }
+
+        RefreshGroupCategoryColumn();
+
+        MessageBox.Show(
+            string.Format(Resources.BulkAssignDone, matched.Count, cat.Name),
+            Resources.BulkAssignDoneTitle,
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
     private void OnManageCategories(object? sender, EventArgs e)
     {
         using var dlg = new CategoryManagementDialog(_db);
@@ -1818,5 +1855,156 @@ internal class FilterableHeaderCell : DataGridViewColumnHeaderCell
         graphics.DrawPolygon(pen, shape);
 
         graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.Default;
+    }
+}
+
+// ── Bulk Category Assignment dialog ──────────────────────────────────────────
+
+/// <summary>
+/// Lets the user paste a list of group names (one per line, copied from Excel)
+/// and assign them all to one category in a single click.
+/// </summary>
+public class BulkAssignDialog : Form
+{
+    /// <summary>Selected category ID + the matched groups, set on OK.</summary>
+    public (int CategoryId, List<TransactionGroup> Matched) Result { get; private set; }
+
+    private readonly List<Category>        _categories;
+    private readonly List<TransactionGroup> _groups;
+
+    private readonly ComboBox _cmbCategory;
+    private readonly TextBox  _txtNames;
+    private readonly Label    _lblPreview;
+    private readonly Button   _btnApply;
+
+    public BulkAssignDialog(List<Category> categories, List<TransactionGroup> groups)
+    {
+        _categories = categories;
+        _groups     = groups;
+
+        SuspendLayout();
+        Text            = Resources.BulkAssignTitle;
+        ClientSize      = new Size(520, 420);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        StartPosition   = FormStartPosition.CenterParent;
+        MaximizeBox     = false;
+        MinimizeBox     = false;
+        ShowInTaskbar   = false;
+        Font            = new Font("Segoe UI", 10f);
+
+        // ── Category picker ───────────────────────────────────────────────────
+        var lblCat = new Label
+        {
+            Text     = Resources.BulkAssignCategoryLabel,
+            Location = new Point(14, 16),
+            AutoSize = true
+        };
+
+        _cmbCategory = new ComboBox
+        {
+            Location      = new Point(14, 36),
+            Size          = new Size(490, 28),
+            DropDownStyle = ComboBoxStyle.DropDownList
+        };
+        foreach (var cat in categories.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
+            _cmbCategory.Items.Add(cat);
+        if (_cmbCategory.Items.Count > 0)
+            _cmbCategory.SelectedIndex = 0;
+        _cmbCategory.SelectedIndexChanged += (_, _) => UpdatePreview();
+
+        // ── Paste area ────────────────────────────────────────────────────────
+        var lblPaste = new Label
+        {
+            Text     = Resources.BulkAssignPasteLabel,
+            Location = new Point(14, 76),
+            AutoSize = true
+        };
+
+        _txtNames = new TextBox
+        {
+            Location   = new Point(14, 96),
+            Size       = new Size(490, 250),
+            Multiline  = true,
+            ScrollBars = ScrollBars.Vertical,
+            Font       = new Font("Consolas", 9.5f),
+            AcceptsReturn = true
+        };
+        _txtNames.TextChanged += (_, _) => UpdatePreview();
+
+        // ── Preview ───────────────────────────────────────────────────────────
+        _lblPreview = new Label
+        {
+            Text      = Resources.BulkAssignPreviewNone,
+            Location  = new Point(14, 354),
+            Size      = new Size(380, 20),
+            ForeColor = Color.DimGray,
+            AutoSize  = false
+        };
+
+        // ── Buttons ───────────────────────────────────────────────────────────
+        var btnFont = new Font("Segoe UI", 10f);
+        _btnApply = new Button
+        {
+            Text     = Resources.BulkAssignApply,
+            Size     = new Size(UiScaler.BW(Resources.BulkAssignApply, btnFont), 32),
+            Location = new Point(504 - UiScaler.BW(Resources.BulkAssignApply, btnFont)
+                                    - 8 - UiScaler.BW(Resources.Cancel, btnFont), 382),
+            Font     = btnFont
+        };
+        var btnCancel = new Button
+        {
+            Text         = Resources.Cancel,
+            DialogResult = DialogResult.Cancel,
+            Size         = new Size(UiScaler.BW(Resources.Cancel, btnFont), 32),
+            Location     = new Point(504 - UiScaler.BW(Resources.Cancel, btnFont), 382),
+            Font         = btnFont
+        };
+
+        _btnApply.Click += OnApply;
+
+        Controls.AddRange(new Control[]
+            { lblCat, _cmbCategory, lblPaste, _txtNames, _lblPreview, _btnApply, btnCancel });
+        AcceptButton = _btnApply;
+        CancelButton = btnCancel;
+        ResumeLayout(false);
+    }
+
+    private List<string> ParsedNames() =>
+        _txtNames.Lines
+            .Select(l => l.Trim())
+            .Where(l => l.Length > 0)
+            .ToList();
+
+    private List<TransactionGroup> FindMatches()
+    {
+        var names = ParsedNames().ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (names.Count == 0) return [];
+        return _groups.Where(g => names.Contains(g.DisplayName)).ToList();
+    }
+
+    private void UpdatePreview()
+    {
+        var names = ParsedNames();
+        if (names.Count == 0)
+        {
+            _lblPreview.Text      = Resources.BulkAssignPreviewNone;
+            _lblPreview.ForeColor = Color.DimGray;
+            _btnApply.Enabled     = false;
+            return;
+        }
+
+        var matched = FindMatches();
+        _lblPreview.Text      = string.Format(Resources.BulkAssignPreview, matched.Count, _groups.Count);
+        _lblPreview.ForeColor = matched.Count > 0 ? Color.DarkGreen : Color.DarkRed;
+        _btnApply.Enabled     = matched.Count > 0 && _cmbCategory.SelectedItem != null;
+    }
+
+    private void OnApply(object? sender, EventArgs e)
+    {
+        if (_cmbCategory.SelectedItem is not Category cat) return;
+        var matched = FindMatches();
+        if (matched.Count == 0) return;
+        Result = (cat.Id, matched);
+        DialogResult = DialogResult.OK;
     }
 }

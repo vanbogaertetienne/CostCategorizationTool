@@ -150,6 +150,17 @@ Les catégories par défaut ont été restaurées.</value></data>
   <data name="FileAssocRemoved" xml:space="preserve"><value>L'association des fichiers .ccp a été supprimée.</value></data>
   <data name="FileAssocRemovedTitle" xml:space="preserve"><value>Association supprimée</value></data>
 
+  <!-- BulkAssignDialog -->
+  <data name="BtnBulkAssign" xml:space="preserve"><value>Assignation en masse…</value></data>
+  <data name="BulkAssignTitle" xml:space="preserve"><value>Assignation de catégorie en masse</value></data>
+  <data name="BulkAssignCategoryLabel" xml:space="preserve"><value>Catégorie :</value></data>
+  <data name="BulkAssignPasteLabel" xml:space="preserve"><value>Collez les noms de groupes (un par ligne — correspondance exacte) :</value></data>
+  <data name="BulkAssignPreviewNone" xml:space="preserve"><value>Collez des noms ci-dessus pour voir les correspondances.</value></data>
+  <data name="BulkAssignPreview" xml:space="preserve"><value>{0} groupe(s) sur {1} correspondent.</value></data>
+  <data name="BulkAssignApply" xml:space="preserve"><value>Appliquer</value></data>
+  <data name="BulkAssignDone" xml:space="preserve"><value>{0} groupe(s) catégorisé(s) en « {1} ».</value></data>
+  <data name="BulkAssignDoneTitle" xml:space="preserve"><value>Assignation en masse terminée</value></data>
+
   <!-- CategoryManagementStep -->
   <data name="CatDesc" xml:space="preserve"><value>Gérez vos catégories de dépenses. Vous pouvez ajouter, renommer ou supprimer des catégories.</value></data>
   <data name="CatTitle" xml:space="preserve"><value>Gérer les catégories et règles</value></data>

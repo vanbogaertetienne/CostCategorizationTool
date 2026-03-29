@@ -150,6 +150,17 @@ Are you sure?</value></data>
   <data name="FileAssocRemoved" xml:space="preserve"><value>.ccp file association has been removed.</value></data>
   <data name="FileAssocRemovedTitle" xml:space="preserve"><value>File Association Removed</value></data>
 
+  <!-- BulkAssignDialog -->
+  <data name="BtnBulkAssign" xml:space="preserve"><value>Bulk assign…</value></data>
+  <data name="BulkAssignTitle" xml:space="preserve"><value>Bulk Category Assignment</value></data>
+  <data name="BulkAssignCategoryLabel" xml:space="preserve"><value>Category:</value></data>
+  <data name="BulkAssignPasteLabel" xml:space="preserve"><value>Paste group names (one per line — exact match):</value></data>
+  <data name="BulkAssignPreviewNone" xml:space="preserve"><value>Paste names above to see matches.</value></data>
+  <data name="BulkAssignPreview" xml:space="preserve"><value>{0} of {1} group(s) matched.</value></data>
+  <data name="BulkAssignApply" xml:space="preserve"><value>Apply</value></data>
+  <data name="BulkAssignDone" xml:space="preserve"><value>{0} group(s) categorized as "{1}".</value></data>
+  <data name="BulkAssignDoneTitle" xml:space="preserve"><value>Bulk Assignment Complete</value></data>
+
   <!-- CategoryManagementStep -->
   <data name="CatDesc" xml:space="preserve"><value>Manage expense categories. You can add, rename, or delete categories.</value></data>
   <data name="CatTitle" xml:space="preserve"><value>Manage Categories &amp; Rules</value></data>
